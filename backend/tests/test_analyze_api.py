@@ -5,7 +5,7 @@ def test_analyze_success(client, auth_headers):
             {"肉末香茹胡罗卜糯米烧卖15个/份": 1, "素鸭每份": 2},
         ]
     }
-    resp = client.post("/analyze", headers={**auth_headers, "Content-Type": "application/json"}, json=payload)
+    resp = client.post("/api/analyze", headers={**auth_headers, "Content-Type": "application/json"}, json=payload)
     assert resp.status_code == 200
     data = resp.json()
     assert data["orders_analyzed"] == 2
@@ -16,7 +16,7 @@ def test_analyze_success(client, auth_headers):
 
 
 def test_analyze_empty_orders(client, auth_headers):
-    resp = client.post("/analyze", headers={**auth_headers, "Content-Type": "application/json"}, json={"orders": []})
+    resp = client.post("/api/analyze", headers={**auth_headers, "Content-Type": "application/json"}, json={"orders": []})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_items"] == 0
@@ -24,5 +24,5 @@ def test_analyze_empty_orders(client, auth_headers):
 
 
 def test_analyze_no_auth(client):
-    resp = client.post("/analyze", json={"orders": []})
+    resp = client.post("/api/analyze", json={"orders": []})
     assert resp.status_code == 422

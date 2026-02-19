@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: haochi-midao
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_PASSWORD
+        sync: false

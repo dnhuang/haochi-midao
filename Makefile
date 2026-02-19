@@ -33,6 +33,12 @@ lint-frontend:
 
 install: install-backend install-frontend
 
+dev:
+	@trap 'kill 0' EXIT; \
+	(cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000) & \
+	(cd frontend && pnpm dev) & \
+	wait
+
 test: test-backend test-frontend
 
 lint: lint-backend lint-frontend
