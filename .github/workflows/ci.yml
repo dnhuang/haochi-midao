@@ -99,4 +99,4 @@ jobs:
         run: sleep 5
 
       - name: Run E2E tests
-        run: cd frontend && pnpm exec playwright test
+        run: cd frontend && pnpm exec playwright test --config e2e/playwright.config.ts
