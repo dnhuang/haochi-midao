@@ -21,9 +21,10 @@ haochi-midao/
 │   │   ├── App.tsx        # Auth gate + tab navigation
 │   │   ├── api.ts         # Fetch wrappers for all endpoints
 │   │   ├── types.ts       # TypeScript interfaces
-│   │   ├── components/    # LoginForm, FileUpload, OrderTable, AnalysisResults, LabelPreview, DiscrepancyWarning
+│   │   ├── index.css      # Tailwind imports + fade-in animation
+│   │   ├── components/    # LoginForm, FileUpload, OrderTable, AnalysisResults, LabelPreview, DiscrepancyWarning, AddOrderForm
 │   │   ├── hooks/         # useAuth, useDragSelect
-│   │   └── pages/         # AnalyzePage, LabelsPage
+│   │   └── pages/         # AnalyzePage, LabelsPage, PreviewEditPage
 │   ├── tests/             # Vitest unit tests
 │   ├── e2e/               # Playwright e2e tests
 │   └── vite.config.ts     # Tailwind plugin + /api proxy
@@ -69,7 +70,21 @@ make lint       # backend + frontend lint
 
 ### Styling
 
-Visual theme is not finalized. Styling decisions deferred until core functionality is stable. Use minimal/default Tailwind styling during development. The previous project used a warm pink/rose palette (primary `#C0575A`, bg `#FDF6F0`, secondary bg `#F5E6E8`, text `#3D2C2C`, serif font) — this may or may not carry over.
+Rose/pink theme using Tailwind CSS utility classes:
+- **Page background**: white (`bg-white`)
+- **Header, nav, cards, panels**: `bg-rose-50` with `border-rose-200`
+- **Primary buttons**: `bg-rose-600 border-rose-700 hover:bg-rose-700` (filled, with visible border)
+- **Secondary/outline buttons**: `text-gray-700 border-gray-300` with `hover:bg-rose-600 hover:text-white hover:border-rose-600` (red fill on hover)
+- **Active tabs**: `border-rose-600 text-rose-600`
+- **Selected order rows**: `bg-rose-200` for strong contrast
+- **Table headers**: `bg-rose-50`
+- **Bar chart**: `bg-rose-400`
+- **Fade-in animation**: defined in `index.css`, used by modal overlay (`animate-fade-in`)
+
+Branding uses Bubu & Dudu cartoon assets in `frontend/public/`:
+- `dudu.jpg` — login page avatar
+- `bubu-dudu-1.jpg` — upload page illustration
+- `bubu-and-dudu-2.jpg` — header logo (circular, top-left)
 
 ---
 
@@ -182,13 +197,27 @@ Generates Avery 5167 label sheets:
 
 ## Frontend Views
 
-| View      | Description                                                                   | Phase |
-|-----------|-------------------------------------------------------------------------------|-------|
-| Login     | Password input, centered layout                                               | 1     |
-| Upload    | File upload widget, process button, error display                             | 1     |
-| Analyze   | Order table with click-and-drag multi-select, Select All / Clear All, analysis results (item list, summary metrics, bar chart, detailed report), CSV/report downloads | 2 |
-| Labels    | Preview table of labels with quantities, PDF download button                  | 3     |
-| Routing   | TBD                                                                           | 4     |
+| View         | Description                                                                   | Phase |
+|--------------|-------------------------------------------------------------------------------|-------|
+| Login        | Password input, centered layout, Dudu avatar above login box                  | 1     |
+| Upload       | File upload widget, process button (disabled until file selected), Bubu & Dudu illustration below | 1 |
+| Preview/Edit | Review parsed orders in expandable table, add manual orders via modal form (quantity steppers, menu item select), edit/remove manual orders (pencil/X icons), discrepancy warnings, Continue button | 1.5 |
+| Analyze      | Order table with click-and-drag multi-select, Select All / Clear All / Analyze in toolbar row, analysis results (item list with non-selectable index column, summary metrics, bar chart, detailed report), CSV/report downloads | 2 |
+| Labels       | Preview table with bordered gridlines matching analysis table, PDF download button | 3 |
+| Routing      | TBD                                                                           | 4     |
+
+### Preview/Edit Page Flow
+
+After file upload, users land on the Preview/Edit page before analysis:
+```
+FileUpload → PreviewEditPage → Tab bar (Analyze | Labels)
+```
+
+- `App.tsx` manages `confirmedOrders` state — tab bar only renders after confirmation
+- Manual orders are tracked via `manualIndices` Set; they display a "Manual" badge and edit/remove icons
+- `AddOrderForm` renders as a modal overlay with fade-in animation; accepts an optional `initial` prop for edit mode
+- On "Continue", orders are re-indexed to contiguous 0-based indices before passing to analysis
+- "Back to Preview" header button clears confirmed orders and returns to preview
 
 ## Authentication
 
