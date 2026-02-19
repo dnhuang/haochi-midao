@@ -35,7 +35,7 @@ async def upload(file: UploadFile, _password: str = Depends(verify_password)):
         orders.append(
             OrderItem(
                 index=int(idx),
-                delivery=int(row["delivery"]),
+                delivery=str(row["delivery"]),
                 customer=str(row["customer"]),
                 items_ordered=str(row["items_ordered"]),
                 phone_number=str(row["phone_number"]),

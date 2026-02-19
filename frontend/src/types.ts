@@ -1,6 +1,6 @@
 export interface OrderItem {
   index: number;
-  delivery: number;
+  delivery: string;
   customer: string;
   items_ordered: string;
   phone_number: string;
@@ -8,6 +8,7 @@ export interface OrderItem {
   city: string;
   zip_code: string;
   item_quantities: Record<string, number>;
+  isManual?: boolean;
 }
 
 export interface Discrepancy {
