@@ -16,7 +16,11 @@ def test_analyze_success(client, auth_headers):
 
 
 def test_analyze_empty_orders(client, auth_headers):
-    resp = client.post("/api/analyze", headers={**auth_headers, "Content-Type": "application/json"}, json={"orders": []})
+    resp = client.post(
+        "/api/analyze",
+        headers={**auth_headers, "Content-Type": "application/json"},
+        json={"orders": []},
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_items"] == 0
