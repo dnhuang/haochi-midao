@@ -6,17 +6,21 @@ import AddOrderForm from "../components/AddOrderForm";
 
 interface PreviewEditPageProps {
   uploadData: UploadResponse;
+  orders: OrderItem[];
+  onOrdersChange: (orders: OrderItem[]) => void;
+  onLabelChange: (index: number, newLabel: string) => void;
   password: string;
-  onConfirm: (orders: OrderItem[]) => void;
+  onConfirm: () => void;
 }
 
 export default function PreviewEditPage({
   uploadData,
+  orders,
+  onOrdersChange,
+  onLabelChange,
   password,
   onConfirm,
 }: PreviewEditPageProps) {
-  const [orders, setOrders] = useState<OrderItem[]>(uploadData.orders);
-  const [manualIndices, setManualIndices] = useState<Set<number>>(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderItem | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -36,32 +40,25 @@ export default function PreviewEditPage({
   };
 
   const handleAdd = (order: OrderItem) => {
-    setOrders((prev) => [...prev, order]);
-    setManualIndices((prev) => new Set(prev).add(order.index));
+    onOrdersChange([...orders, { ...order, isManual: true }]);
     setShowAddForm(false);
   };
 
   const handleEdit = (order: OrderItem) => {
-    setOrders((prev) => prev.map((o) => (o.index === order.index ? order : o)));
+    onOrdersChange(orders.map((o) => (o.index === order.index ? { ...order, isManual: true } : o)));
     setEditingOrder(null);
   };
 
   const handleRemove = (index: number) => {
-    setOrders((prev) => prev.filter((o) => o.index !== index));
-    setManualIndices((prev) => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
-    });
-  };
-
-  const handleConfirm = () => {
-    const reindexed = orders.map((o, i) => ({ ...o, index: i }));
-    onConfirm(reindexed);
+    onOrdersChange(orders.filter((o) => o.index !== index));
   };
 
   const nextIndex = orders.length > 0 ? Math.max(...orders.map((o) => o.index)) + 1 : 0;
-  const nextDelivery = orders.length > 0 ? Math.max(...orders.map((o) => o.delivery)) + 1 : 1;
+  const maxManualNum = orders
+    .filter((o) => /^M\d+$/.test(o.delivery))
+    .map((o) => parseInt(o.delivery.slice(1)))
+    .reduce((max, n) => Math.max(max, n), 0);
+  const nextLabel = `M${maxManualNum + 1}`;
 
   return (
     <div className="space-y-4">
@@ -80,7 +77,7 @@ export default function PreviewEditPage({
             Add Order
           </button>
           <button
-            onClick={handleConfirm}
+            onClick={onConfirm}
             className="px-4 py-1.5 text-sm bg-rose-600 text-white rounded border border-rose-700 hover:bg-rose-700"
           >
             Continue
@@ -94,7 +91,7 @@ export default function PreviewEditPage({
           <thead className="bg-rose-50 text-left text-gray-600">
             <tr>
               <th className="w-8 px-2 py-2"></th>
-              <th className="px-4 py-2">#</th>
+              <th className="px-4 py-2">Label</th>
               <th className="px-4 py-2">Customer</th>
               <th className="px-4 py-2">City</th>
               <th className="px-4 py-2">Items</th>
@@ -104,7 +101,7 @@ export default function PreviewEditPage({
           <tbody>
             {orders.map((order) => {
               const isExpanded = expanded.has(order.index);
-              const isManual = manualIndices.has(order.index);
+              const isManual = !!order.isManual;
               const itemEntries = Object.entries(order.item_quantities);
               return (
                 <Fragment key={order.index}>
@@ -117,7 +114,14 @@ export default function PreviewEditPage({
                         {isExpanded ? "\u25BC" : "\u25B6"}
                       </button>
                     </td>
-                    <td className="px-4 py-2 text-gray-500">{order.delivery}</td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="text"
+                        value={order.delivery}
+                        onChange={(e) => onLabelChange(order.index, e.target.value)}
+                        className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-rose-400 focus:outline-none w-20 text-gray-500"
+                      />
+                    </td>
                     <td className="px-4 py-2">
                       {order.customer}
                       {isManual && (
@@ -183,7 +187,7 @@ export default function PreviewEditPage({
       {showAddForm && (
         <AddOrderForm
           menuItems={menuItems}
-          nextDelivery={nextDelivery}
+          nextDelivery={nextLabel}
           nextIndex={nextIndex}
           onAdd={handleAdd}
           onCancel={() => setShowAddForm(false)}
@@ -194,7 +198,7 @@ export default function PreviewEditPage({
       {editingOrder && (
         <AddOrderForm
           menuItems={menuItems}
-          nextDelivery={nextDelivery}
+          nextDelivery={nextLabel}
           nextIndex={nextIndex}
           onAdd={handleEdit}
           onCancel={() => setEditingOrder(null)}

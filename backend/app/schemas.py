@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class OrderItem(BaseModel):
     index: int
-    delivery: int
+    delivery: str
     customer: str
     items_ordered: str
     phone_number: str

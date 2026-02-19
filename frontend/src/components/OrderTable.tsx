@@ -8,9 +8,11 @@ interface OrderTableProps {
   onSelectionChange: (selected: Set<number>) => void;
   /** Optional action element rendered at the right end of the toolbar */
   toolbarAction?: React.ReactNode;
+  /** Callback to edit a row's label; if provided, label column is editable */
+  onLabelChange?: (index: number, newLabel: string) => void;
 }
 
-export default function OrderTable({ orders, selected, onSelectionChange, toolbarAction }: OrderTableProps) {
+export default function OrderTable({ orders, selected, onSelectionChange, toolbarAction, onLabelChange }: OrderTableProps) {
   const { handlers, selectAll, clearAll } = useDragSelect(orders.length, selected, onSelectionChange);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
@@ -46,7 +48,7 @@ export default function OrderTable({ orders, selected, onSelectionChange, toolba
           <thead className="bg-rose-50 text-left text-gray-600">
             <tr>
               <th className="w-8 px-2 py-2"></th>
-              <th className="px-4 py-2">#</th>
+              <th className="px-4 py-2">Label</th>
               <th className="px-4 py-2">Customer</th>
               <th className="px-4 py-2">City</th>
               <th className="px-4 py-2">Items</th>
@@ -74,7 +76,19 @@ export default function OrderTable({ orders, selected, onSelectionChange, toolba
                         {isExpanded ? "▼" : "▶"}
                       </button>
                     </td>
-                    <td className="px-4 py-2 text-gray-500">{order.delivery}</td>
+                    <td className="px-4 py-2 text-gray-500">
+                      {onLabelChange ? (
+                        <input
+                          type="text"
+                          value={order.delivery}
+                          onChange={(e) => onLabelChange(order.index, e.target.value)}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-rose-400 focus:outline-none w-20"
+                        />
+                      ) : (
+                        order.delivery
+                      )}
+                    </td>
                     <td className="px-4 py-2">{order.customer}</td>
                     <td className="px-4 py-2 text-gray-600">{order.city}</td>
                     <td className="px-4 py-2 text-gray-500">

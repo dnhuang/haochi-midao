@@ -12,7 +12,8 @@ type Tab = "analyze" | "labels";
 function App() {
   const { password, isAuthenticated, login, logout, error, loading } = useAuth();
   const [uploadData, setUploadData] = useState<UploadResponse | null>(null);
-  const [confirmedOrders, setConfirmedOrders] = useState<OrderItem[] | null>(null);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const [sortedItems, setSortedItems] = useState<SortedItem[] | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("analyze");
 
@@ -20,16 +21,29 @@ function App() {
     return <LoginForm onLogin={login} error={error} loading={loading} />;
   }
 
+  const handleUpload = (data: UploadResponse) => {
+    setUploadData(data);
+    setOrders(data.orders);
+    setIsConfirmed(false);
+    setSortedItems(null);
+    setActiveTab("analyze");
+  };
+
   const handleReset = () => {
     setUploadData(null);
-    setConfirmedOrders(null);
+    setOrders([]);
+    setIsConfirmed(false);
     setSortedItems(null);
     setActiveTab("analyze");
   };
 
   const handleBackToPreview = () => {
-    setConfirmedOrders(null);
+    setIsConfirmed(false);
     setSortedItems(null);
+  };
+
+  const handleLabelChange = (index: number, newLabel: string) => {
+    setOrders((prev) => prev.map((o) => (o.index === index ? { ...o, delivery: newLabel } : o)));
   };
 
   return (
@@ -44,7 +58,7 @@ function App() {
         />
         <h1 className="text-xl font-bold text-gray-800 flex-1 text-center">好吃米道</h1>
         <div className="flex items-center gap-4">
-          {uploadData && confirmedOrders && (
+          {uploadData && isConfirmed && (
             <button onClick={handleBackToPreview} className="text-sm text-gray-700 border border-gray-300 rounded px-3 py-1 hover:bg-rose-600 hover:text-white hover:border-rose-600">
               Back to Preview
             </button>
@@ -61,7 +75,7 @@ function App() {
       </header>
 
       {/* Tab bar */}
-      {confirmedOrders && (
+      {isConfirmed && (
         <nav className="bg-rose-50 border-b border-rose-200 px-6">
           <div className="flex gap-6">
             {(["analyze", "labels"] as Tab[]).map((tab) => (
@@ -84,18 +98,22 @@ function App() {
       {/* Content */}
       <main className="max-w-7xl mx-auto p-6">
         {!uploadData ? (
-          <FileUpload password={password} onUpload={setUploadData} />
-        ) : !confirmedOrders ? (
+          <FileUpload password={password} onUpload={handleUpload} />
+        ) : !isConfirmed ? (
           <PreviewEditPage
             uploadData={uploadData}
+            orders={orders}
+            onOrdersChange={setOrders}
+            onLabelChange={handleLabelChange}
             password={password}
-            onConfirm={setConfirmedOrders}
+            onConfirm={() => setIsConfirmed(true)}
           />
         ) : activeTab === "analyze" ? (
           <AnalyzePage
-            orders={confirmedOrders}
+            orders={orders}
             password={password}
             onAnalysis={setSortedItems}
+            onLabelChange={handleLabelChange}
           />
         ) : (
           <LabelsPage sortedItems={sortedItems} password={password} />

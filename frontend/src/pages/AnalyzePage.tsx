@@ -8,9 +8,10 @@ interface AnalyzePageProps {
   orders: OrderItem[];
   password: string;
   onAnalysis: (items: SortedItem[]) => void;
+  onLabelChange: (index: number, newLabel: string) => void;
 }
 
-export default function AnalyzePage({ orders, password, onAnalysis }: AnalyzePageProps) {
+export default function AnalyzePage({ orders, password, onAnalysis, onLabelChange }: AnalyzePageProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,7 @@ export default function AnalyzePage({ orders, password, onAnalysis }: AnalyzePag
           orders={orders}
           selected={selected}
           onSelectionChange={setSelected}
+          onLabelChange={onLabelChange}
           toolbarAction={
             <div className="flex items-center gap-3">
               {error && <p className="text-red-600 text-sm">{error}</p>}

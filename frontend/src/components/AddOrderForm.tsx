@@ -8,7 +8,7 @@ interface ItemRow {
 
 interface AddOrderFormProps {
   menuItems: MenuItem[];
-  nextDelivery: number;
+  nextDelivery: string;
   nextIndex: number;
   onAdd: (order: OrderItem) => void;
   onCancel: () => void;

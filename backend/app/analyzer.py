@@ -13,10 +13,26 @@ def load_food_items(path: str | None = None) -> List[str]:
     return food_df["item_zh"].tolist()
 
 
-def read_summary_table(excel_file) -> Dict[str, int]:
+def detect_format(excel_file) -> str:
+    """Detect whether the Excel file is raw WeChat export or human-formatted.
+    Returns 'raw' or 'formatted'.
+    """
+    df_header = pd.read_excel(excel_file, skiprows=3, nrows=0)
+    excel_file.seek(0)
+    return "raw" if "标签" in df_header.columns else "formatted"
+
+
+def read_summary_table(excel_file, fmt: str = "raw") -> Dict[str, int]:
     """Read the 商品汇总 summary table from a WeChat export Excel file.
     Returns {item_name: total_quantity}.
     """
+    if fmt == "raw":
+        return _read_summary_raw(excel_file)
+    return _read_summary_formatted(excel_file)
+
+
+def _read_summary_raw(excel_file) -> Dict[str, int]:
+    """Read summary table from raw WeChat export format."""
     df_raw = pd.read_excel(excel_file, skiprows=3, header=0)
 
     # Locate the summary table header row (序号 == '商品')
@@ -40,6 +56,52 @@ def read_summary_table(excel_file) -> Dict[str, int]:
         item_name = str(row["序号"]).strip()
         try:
             result[item_name] = int(row["内容"])
+        except (ValueError, TypeError):
+            continue
+    return result
+
+
+def _read_summary_formatted(excel_file) -> Dict[str, int]:
+    """Read summary table from human-formatted export."""
+    df_raw = pd.read_excel(excel_file, skiprows=3, header=0)
+
+    # Find the row containing '商品汇总' in any cell
+    summary_start = None
+    for col in df_raw.columns:
+        mask = df_raw[col].astype(str).str.strip() == "商品汇总"
+        if mask.any():
+            summary_start = int(mask.idxmax())
+            break
+
+    if summary_start is None:
+        return {}
+
+    # Next row has sub-headers: find '商品' and '数量' columns
+    header_row = df_raw.iloc[summary_start + 1]
+    item_col = None
+    qty_col = None
+    for c in df_raw.columns:
+        val = str(header_row[c]).strip()
+        if val == "商品":
+            item_col = c
+        elif val == "数量":
+            qty_col = c
+
+    if item_col is None or qty_col is None:
+        return {}
+
+    # Read item/quantity pairs until 总计 or NaN
+    result = {}
+    for i in range(summary_start + 2, len(df_raw)):
+        item = df_raw.iloc[i][item_col]
+        qty = df_raw.iloc[i][qty_col]
+        if pd.isna(item):
+            break
+        item_name = str(item).strip()
+        if item_name == "总计":
+            break
+        try:
+            result[item_name] = int(qty)
         except (ValueError, TypeError):
             continue
     return result
@@ -77,38 +139,59 @@ def validate_against_summary(
 def process_excel(excel_file, food_items: List[str]) -> Tuple[pd.DataFrame, List[Tuple[str, int, int]]]:
     """
     Process an uploaded Excel file into a DataFrame with food item quantity columns.
+    Auto-detects raw WeChat export vs human-formatted files.
     Returns (df, discrepancies) where discrepancies is a list of
     (food_item, parsed_total, expected_total) for any summary table mismatches.
     Raises ValueError on bad input structure.
     """
-    summary_dict = read_summary_table(excel_file)
+    fmt = detect_format(excel_file)
+
+    summary_dict = read_summary_table(excel_file, fmt)
     excel_file.seek(0)
 
-    df = pd.read_excel(excel_file, skiprows=3, usecols=[0, 1, 2, 4, 5, 6, 7])
+    if fmt == "raw":
+        df = pd.read_excel(excel_file, skiprows=3, usecols=[0, 1, 2, 4, 5, 6, 7])
+    else:
+        df = pd.read_excel(excel_file, skiprows=3, usecols=[1, 2, 3, 4, 5, 6, 7])
+
     df = df.dropna(how="all")
 
     if len(df.columns) < 7:
         raise ValueError(f"Expected at least 7 columns, got {len(df.columns)}")
 
-    df = df.rename(
-        columns={
-            df.columns[0]: "delivery",  # 序号  (sequence number)
-            df.columns[1]: "customer",  # 姓名  (customer name)
-            df.columns[2]: "items_ordered",  # 内容  (items text)
-            df.columns[3]: "phone_number",  # 手机号码
-            df.columns[4]: "address",  # 收货地址
-            df.columns[5]: "city",  # 所在城市
-            df.columns[6]: "zip_code",  # 邮政编码
-        }
-    )
-    df["delivery"] = pd.to_numeric(df["delivery"], errors="coerce")  # causes bottom summary table to be NaN
-    df = df.dropna(subset=["delivery", "customer"]).reset_index(drop=True)  # bottom summary table gets dropped
-    df["delivery"] = df["delivery"].astype(int)
-    df["phone_number"] = df["phone_number"].apply(lambda x: str(int(x)) if pd.notna(x) else "")
-    df["zip_code"] = df["zip_code"].apply(lambda x: str(int(x)) if pd.notna(x) else "")
+    # Map Chinese column names to internal names
+    col_map = {
+        "序号": "delivery",
+        "姓名": "customer",
+        "内容": "items_ordered",
+        "手机号码": "phone_number",
+        "收货地址": "address",
+        "所在城市": "city",
+        "邮政编码": "zip_code",
+        "邮编": "zip_code",
+    }
+    df = df.rename(columns={c: col_map[c] for c in df.columns if c in col_map})
+
+    # Filter to actual order rows: must have customer AND items text containing 总价
+    df = df.dropna(subset=["customer"]).reset_index(drop=True)
+    has_order_text = df["items_ordered"].astype(str).str.contains("总价", na=False)
+    df = df[has_order_text].reset_index(drop=True)
+
+    # Keep delivery as string
+    df["delivery"] = df["delivery"].apply(lambda x: str(int(x)) if isinstance(x, float) and x == int(x) else str(x))
+
+    def _to_str(x):
+        if pd.isna(x):
+            return ""
+        if isinstance(x, float) and x == int(x):
+            return str(int(x))
+        return str(x)
+
+    df["phone_number"] = df["phone_number"].apply(_to_str)
+    df["zip_code"] = df["zip_code"].apply(_to_str)
 
     if len(df) == 0:
-        raise ValueError("No orders found. Make sure you're uploading a RAW WeChat export .xlsx file.")
+        raise ValueError("No orders found. Make sure you're uploading a valid WeChat export .xlsx file.")
 
     for food_item in food_items:
         df[food_item] = 0
