@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+*.egg
+
+# Node
+node_modules/
+dist/
+
+# Environment / secrets
+.env
+backend/config.json
+
+# Data files (real customer data)
+backend/data/*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
