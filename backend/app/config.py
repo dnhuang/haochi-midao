@@ -31,5 +31,6 @@ def get_google_maps_api_key() -> str:
                 return data["google_maps_api_key"]
 
     raise RuntimeError(
-        "No Google Maps API key configured. Set GOOGLE_MAPS_API_KEY env var or add 'google_maps_api_key' to backend/config.json."
+        "No Google Maps API key configured. "
+        "Set GOOGLE_MAPS_API_KEY env var or add 'google_maps_api_key' to backend/config.json."
     )
