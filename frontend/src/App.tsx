@@ -5,9 +5,10 @@ import LoginForm from "./components/LoginForm";
 import FileUpload from "./components/FileUpload";
 import AnalyzePage from "./pages/AnalyzePage";
 import LabelsPage from "./pages/LabelsPage";
+import RoutingPage from "./pages/RoutingPage";
 import PreviewEditPage from "./pages/PreviewEditPage";
 
-type Tab = "analyze" | "labels";
+type Tab = "analyze" | "labels" | "routing";
 
 function App() {
   const { password, isAuthenticated, login, logout, error, loading } = useAuth();
@@ -78,7 +79,7 @@ function App() {
       {isConfirmed && (
         <nav className="bg-rose-50 border-b border-rose-200 px-6">
           <div className="flex gap-6">
-            {(["analyze", "labels"] as Tab[]).map((tab) => (
+            {(["analyze", "labels", "routing"] as Tab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -115,8 +116,10 @@ function App() {
             onAnalysis={setSortedItems}
             onLabelChange={handleLabelChange}
           />
-        ) : (
+        ) : activeTab === "labels" ? (
           <LabelsPage sortedItems={sortedItems} password={password} />
+        ) : (
+          <RoutingPage orders={orders} password={password} />
         )}
       </main>
     </div>

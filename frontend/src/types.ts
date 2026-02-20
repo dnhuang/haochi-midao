@@ -44,3 +44,17 @@ export interface AnalyzeResponse {
   total_items: number;
   orders_analyzed: number;
 }
+
+export interface RouteStop {
+  stop_number: number;
+  customer: string;
+  address: string;
+  city: string;
+  zip_code: string;
+  order_index: number;
+}
+
+export interface RouteResponse {
+  stops: RouteStop[];
+  total_stops: number;
+}
