@@ -55,3 +55,31 @@ class AnalyzeResponse(BaseModel):
 
 class LabelsRequest(BaseModel):
     sorted_items: List[SortedItem]
+
+
+class RouteOrderInput(BaseModel):
+    index: int
+    customer: str
+    address: str
+    city: str
+    zip_code: str
+
+
+class RouteRequest(BaseModel):
+    orders: List[RouteOrderInput]
+    start_address: str
+    end_address: str
+
+
+class RouteStopResponse(BaseModel):
+    stop_number: int
+    customer: str
+    address: str
+    city: str
+    zip_code: str
+    order_index: int
+
+
+class RouteResponse(BaseModel):
+    stops: List[RouteStopResponse]
+    total_stops: int
