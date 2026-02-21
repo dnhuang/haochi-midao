@@ -5,9 +5,8 @@ from app.routing import GeocodingError, RouteStop
 
 def test_route_success(client, auth_headers):
     mock_stops = [
-        RouteStop(1, "Start", "start addr", "", "", -1),
-        RouteStop(2, "Alice", "a1", "NYC", "10001", 0),
-        RouteStop(3, "End", "end addr", "", "", -1),
+        RouteStop(1, "Start", "start addr", "", "", -1, 0),
+        RouteStop(2, "Alice", "a1", "NYC", "10001", 0, 600),
     ]
     with patch("app.routers.routing.optimize_route", return_value=mock_stops):
         with patch("app.routers.routing.get_google_maps_api_key", return_value="fake"):
@@ -25,13 +24,14 @@ def test_route_success(client, auth_headers):
                         },
                     ],
                     "start_address": "start addr",
-                    "end_address": "end addr",
                 },
             )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["total_stops"] == 3
+    assert data["total_stops"] == 2
     assert data["stops"][0]["customer"] == "Start"
+    assert data["stops"][0]["duration_seconds"] == 0
+    assert data["stops"][1]["duration_seconds"] == 600
 
 
 def test_route_no_orders(client, auth_headers):
@@ -42,7 +42,6 @@ def test_route_no_orders(client, auth_headers):
             json={
                 "orders": [],
                 "start_address": "start",
-                "end_address": "end",
             },
         )
     assert resp.status_code == 400
@@ -68,7 +67,6 @@ def test_route_geocoding_error(client, auth_headers):
                         },
                     ],
                     "start_address": "start",
-                    "end_address": "end",
                 },
             )
     assert resp.status_code == 400
@@ -80,7 +78,6 @@ def test_route_no_auth(client):
         json={
             "orders": [],
             "start_address": "s",
-            "end_address": "e",
         },
     )
     assert resp.status_code == 422

@@ -33,7 +33,7 @@ def create_route(
     ]
 
     try:
-        stops = optimize_route(orders_dicts, request.start_address, request.end_address, api_key)
+        stops = optimize_route(orders_dicts, request.start_address, api_key)
     except GeocodingError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RoutingError as e:
@@ -48,6 +48,7 @@ def create_route(
                 city=s.city,
                 zip_code=s.zip_code,
                 order_index=s.order_index,
+                duration_seconds=s.duration_seconds,
             )
             for s in stops
         ],

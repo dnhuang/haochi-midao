@@ -9,9 +9,28 @@ interface AnalyzePageProps {
   password: string;
   onAnalysis: (items: SortedItem[]) => void;
   onLabelChange: (index: number, newLabel: string) => void;
+  groupColors: Record<string, string>;
+  onGroupChange: (index: number, group: string) => void;
+  onAddGroup: (name: string) => void;
+  onDeleteGroup: (name: string) => void;
+  onReorder: (reorderedOrders: OrderItem[]) => void;
+  showLabel?: boolean;
+  onToggleLabel?: () => void;
 }
 
-export default function AnalyzePage({ orders, password, onAnalysis, onLabelChange }: AnalyzePageProps) {
+export default function AnalyzePage({
+  orders,
+  password,
+  onAnalysis,
+  onLabelChange,
+  groupColors,
+  onGroupChange,
+  onAddGroup,
+  onDeleteGroup,
+  onReorder,
+  showLabel,
+  onToggleLabel,
+}: AnalyzePageProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,6 +56,11 @@ export default function AnalyzePage({ orders, password, onAnalysis, onLabelChang
     }
   };
 
+  const handleSelectGroup = (name: string) => {
+    const groupIndices = orders.filter((o) => o.group === name).map((o) => o.index);
+    setSelected(new Set(groupIndices));
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left: order table */}
@@ -46,6 +70,14 @@ export default function AnalyzePage({ orders, password, onAnalysis, onLabelChang
           selected={selected}
           onSelectionChange={setSelected}
           onLabelChange={onLabelChange}
+          groupColors={groupColors}
+          onGroupChange={onGroupChange}
+          onAddGroup={onAddGroup}
+          onDeleteGroup={onDeleteGroup}
+          onSelectGroup={handleSelectGroup}
+          onReorder={onReorder}
+          showLabel={showLabel}
+          onToggleLabel={onToggleLabel}
           toolbarAction={
             <div className="flex items-center gap-3">
               {error && <p className="text-red-600 text-sm">{error}</p>}

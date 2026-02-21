@@ -10,6 +10,30 @@ import PreviewEditPage from "./pages/PreviewEditPage";
 
 type Tab = "analyze" | "labels" | "routing";
 
+const GROUP_COLORS = [
+  "#f87171", // red-400
+  "#60a5fa", // blue-400
+  "#4ade80", // green-400
+  "#facc15", // yellow-400
+  "#c084fc", // purple-400
+  "#fb923c", // orange-400
+  "#2dd4bf", // teal-400
+  "#f472b6", // pink-400
+  "#818cf8", // indigo-400
+  "#a3a3a3", // neutral-400
+];
+
+/** Convert 0-based index to spreadsheet-style letter: 0→A, 25→Z, 26→AA, 27→AB, ... */
+function indexToLetter(i: number): string {
+  let result = "";
+  let n = i;
+  do {
+    result = String.fromCharCode(65 + (n % 26)) + result;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return result;
+}
+
 function App() {
   const { password, isAuthenticated, login, logout, error, loading } = useAuth();
   const [uploadData, setUploadData] = useState<UploadResponse | null>(null);
@@ -17,6 +41,8 @@ function App() {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [sortedItems, setSortedItems] = useState<SortedItem[] | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("analyze");
+  const [groupColors, setGroupColors] = useState<Record<string, string>>({});
+  const [showLabel, setShowLabel] = useState(true);
 
   if (!isAuthenticated || !password) {
     return <LoginForm onLogin={login} error={error} loading={loading} />;
@@ -24,10 +50,40 @@ function App() {
 
   const handleUpload = (data: UploadResponse) => {
     setUploadData(data);
-    setOrders(data.orders);
     setIsConfirmed(false);
     setSortedItems(null);
     setActiveTab("analyze");
+    if (data.format === "formatted") {
+      // Formatted files: single group "A" for all orders
+      const colors: Record<string, string> = { A: GROUP_COLORS[0] };
+      setGroupColors(colors);
+      setOrders(data.orders.map((o) => ({ ...o, group: "A" })));
+      setShowLabel(true);
+    } else {
+      // Raw files: group by city, sort by city then zip
+      const uniqueCities = [...new Set(data.orders.map((o) => o.city).filter(Boolean))];
+      const colors: Record<string, string> = {};
+      const cityToGroup: Record<string, string> = {};
+      uniqueCities.forEach((city, i) => {
+        const letter = indexToLetter(i);
+        colors[letter] = GROUP_COLORS[i % GROUP_COLORS.length];
+        cityToGroup[city] = letter;
+      });
+
+      // Sort orders by city (group letter) then zip code
+      const sorted = [...data.orders]
+        .map((o) => ({ ...o, group: o.city ? cityToGroup[o.city] : undefined }))
+        .sort((a, b) => {
+          const ga = a.group || "zzz";
+          const gb = b.group || "zzz";
+          if (ga !== gb) return ga.localeCompare(gb);
+          return (a.zip_code || "").localeCompare(b.zip_code || "");
+        });
+
+      setGroupColors(colors);
+      setOrders(sorted);
+      setShowLabel(false);
+    }
   };
 
   const handleReset = () => {
@@ -36,6 +92,8 @@ function App() {
     setIsConfirmed(false);
     setSortedItems(null);
     setActiveTab("analyze");
+    setGroupColors({});
+    setShowLabel(true);
   };
 
   const handleBackToPreview = () => {
@@ -45,6 +103,32 @@ function App() {
 
   const handleLabelChange = (index: number, newLabel: string) => {
     setOrders((prev) => prev.map((o) => (o.index === index ? { ...o, delivery: newLabel } : o)));
+  };
+
+  const handleGroupChange = (index: number, group: string) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.index === index ? { ...o, group: group || undefined } : o)),
+    );
+  };
+
+  const handleAddGroup = (name: string) => {
+    if (groupColors[name]) return;
+    const usedColors = new Set(Object.values(groupColors));
+    const nextColor = GROUP_COLORS.find((c) => !usedColors.has(c)) || GROUP_COLORS[Object.keys(groupColors).length % GROUP_COLORS.length];
+    setGroupColors((prev) => ({ ...prev, [name]: nextColor }));
+  };
+
+  const handleDeleteGroup = (name: string) => {
+    setGroupColors((prev) => {
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+    setOrders((prev) => prev.map((o) => (o.group === name ? { ...o, group: undefined } : o)));
+  };
+
+  const handleReorderOrders = (newOrders: OrderItem[]) => {
+    setOrders(newOrders);
   };
 
   return (
@@ -108,6 +192,13 @@ function App() {
             onLabelChange={handleLabelChange}
             password={password}
             onConfirm={() => setIsConfirmed(true)}
+            groupColors={groupColors}
+            onGroupChange={handleGroupChange}
+            onAddGroup={handleAddGroup}
+            onDeleteGroup={handleDeleteGroup}
+            onReorder={handleReorderOrders}
+            showLabel={showLabel}
+            onToggleLabel={() => setShowLabel((v) => !v)}
           />
         ) : activeTab === "analyze" ? (
           <AnalyzePage
@@ -115,11 +206,22 @@ function App() {
             password={password}
             onAnalysis={setSortedItems}
             onLabelChange={handleLabelChange}
+            groupColors={groupColors}
+            onGroupChange={handleGroupChange}
+            onAddGroup={handleAddGroup}
+            onDeleteGroup={handleDeleteGroup}
+            onReorder={handleReorderOrders}
+            showLabel={showLabel}
+            onToggleLabel={() => setShowLabel((v) => !v)}
           />
         ) : activeTab === "labels" ? (
           <LabelsPage sortedItems={sortedItems} password={password} />
         ) : (
-          <RoutingPage orders={orders} password={password} />
+          <RoutingPage
+            orders={orders}
+            password={password}
+            groupColors={groupColors}
+          />
         )}
       </main>
     </div>

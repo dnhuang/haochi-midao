@@ -9,6 +9,7 @@ export interface OrderItem {
   zip_code: string;
   item_quantities: Record<string, number>;
   isManual?: boolean;
+  group?: string;
 }
 
 export interface Discrepancy {
@@ -21,6 +22,7 @@ export interface UploadResponse {
   orders: OrderItem[];
   discrepancies: Discrepancy[];
   food_columns: string[];
+  format: "raw" | "formatted";
 }
 
 export interface MenuItem {
@@ -52,6 +54,7 @@ export interface RouteStop {
   city: string;
   zip_code: string;
   order_index: number;
+  duration_seconds: number;
 }
 
 export interface RouteResponse {

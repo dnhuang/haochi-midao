@@ -1,8 +1,29 @@
+import json
+import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Tuple
 
 import requests
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
+
+logger = logging.getLogger("uvicorn.error")
+
+_CACHE_PATH = Path(__file__).resolve().parent.parent / "data" / "geocode_cache.json"
+
+
+def _load_cache() -> dict:
+    """Load geocode cache from disk. Returns empty dict if file doesn't exist."""
+    try:
+        return json.loads(_CACHE_PATH.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _save_cache(cache: dict) -> None:
+    """Write geocode cache to disk."""
+    _CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _CACHE_PATH.write_text(json.dumps(cache, indent=2))
 
 
 @dataclass
@@ -15,7 +36,7 @@ class Location:
     lat: float
     lng: float
     customer: str
-    index: int  # original order index, -1 for start/end
+    index: int  # original order index, -1 for start
 
 
 class GeocodingError(Exception):
@@ -41,6 +62,14 @@ def geocode_address(
 ) -> Tuple[float, float]:
     """Geocode a single address using Google Geocoding API. Returns (lat, lng)."""
     full_address = f"{address}, {city} {zip_code}".strip()
+
+    # Check cache first
+    cache = _load_cache()
+    if full_address in cache:
+        logger.info("Geocode cache hit: %s", full_address)
+        entry = cache[full_address]
+        return entry["lat"], entry["lng"]
+
     url = "https://maps.googleapis.com/maps/api/geocode/json"
     params = {"address": full_address, "key": api_key}
 
@@ -55,22 +84,33 @@ def geocode_address(
         raise GeocodingError(full_address, f"Google API returned status: {data['status']}")
 
     location = data["results"][0]["geometry"]["location"]
-    return location["lat"], location["lng"]
+    lat, lng = location["lat"], location["lng"]
+
+    # Save to cache
+    logger.info("Geocode cache miss, calling API: %s", full_address)
+    cache[full_address] = {"lat": lat, "lng": lng}
+    _save_cache(cache)
+
+    return lat, lng
 
 
 def get_distance_matrix(
     locations: List[Location],
     api_key: str,
-) -> List[List[int]]:
-    """Get N×N driving distance matrix (in meters) using Google Distance Matrix API.
+) -> Tuple[List[List[int]], List[List[int]]]:
+    """Get N×N driving distance (meters) and duration (seconds) matrices.
 
-    Batches requests in 25×25 chunks to respect the API limit.
+    Batches requests so each has at most 10×10 = 100 elements,
+    respecting the API's 100-element-per-request limit.
+
+    Returns (distance_matrix, duration_matrix).
     """
     n = len(locations)
     coords = [f"{loc.lat},{loc.lng}" for loc in locations]
-    matrix = [[0] * n for _ in range(n)]
+    dist_matrix = [[0] * n for _ in range(n)]
+    dur_matrix = [[0] * n for _ in range(n)]
 
-    batch_size = 25
+    batch_size = 10
     for i_start in range(0, n, batch_size):
         i_end = min(i_start + batch_size, n)
         for j_start in range(0, n, batch_size):
@@ -100,33 +140,39 @@ def get_distance_matrix(
             for i_offset, row in enumerate(data["rows"]):
                 for j_offset, element in enumerate(row["elements"]):
                     if element["status"] == "OK":
-                        matrix[i_start + i_offset][j_start + j_offset] = element["distance"]["value"]
+                        dist_matrix[i_start + i_offset][j_start + j_offset] = element["distance"]["value"]
+                        dur_matrix[i_start + i_offset][j_start + j_offset] = element["duration"]["value"]
                     else:
-                        matrix[i_start + i_offset][j_start + j_offset] = 999_999_999
+                        dist_matrix[i_start + i_offset][j_start + j_offset] = 999_999_999
+                        dur_matrix[i_start + i_offset][j_start + j_offset] = 999_999_999
 
-    return matrix
+    return dist_matrix, dur_matrix
 
 
 def solve_tsp(
     distance_matrix: List[List[int]],
     start_idx: int,
-    end_idx: int,
 ) -> List[int]:
-    """Solve TSP with fixed start and end nodes using OR-Tools.
+    """Solve open-ended TSP with fixed start using OR-Tools.
 
-    Returns ordered list of node indices representing the optimal route.
+    Returns ordered list of node indices (does not return to start).
     """
     n = len(distance_matrix)
     if n <= 2:
         return list(range(n))
 
-    manager = pywrapcp.RoutingIndexManager(n, 1, [start_idx], [end_idx])
+    # Zero out return-to-start costs so the solver treats this as open-ended
+    matrix = [row[:] for row in distance_matrix]
+    for i in range(n):
+        matrix[i][start_idx] = 0
+
+    manager = pywrapcp.RoutingIndexManager(n, 1, start_idx)
     routing = pywrapcp.RoutingModel(manager)
 
     def distance_callback(from_index, to_index):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return distance_matrix[from_node][to_node]
+        return matrix[from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
@@ -146,7 +192,7 @@ def solve_tsp(
         node = manager.IndexToNode(index)
         route.append(node)
         index = solution.Value(routing.NextVar(index))
-    route.append(manager.IndexToNode(index))
+    # Don't append return-to-start — route is open-ended
 
     return route
 
@@ -160,20 +206,21 @@ class RouteStop:
     address: str
     city: str
     zip_code: str
-    order_index: int  # -1 for start/end waypoints
+    order_index: int  # -1 for start waypoint
+    duration_seconds: int  # travel time from previous stop (0 for start)
 
 
 def optimize_route(
     orders: List[dict],
     start_address: str,
-    end_address: str,
     api_key: str,
 ) -> List[RouteStop]:
     """Geocode all addresses, compute distance matrix, solve TSP, return ordered stops.
 
+    The route starts at start_address and ends at the last delivery stop (no round-trip).
+
     orders: list of dicts with keys: index, customer, address, city, zip_code
     start_address: free-text start address (geocoded as-is)
-    end_address: free-text end address (geocoded as-is)
     """
     locations: List[Location] = []
 
@@ -205,29 +252,26 @@ def optimize_route(
     if errors:
         raise GeocodingError("multiple addresses", "Failed to geocode: " + "; ".join(errors))
 
-    # Geocode end
-    end_lat, end_lng = geocode_address(end_address, "", "", api_key)
-    locations.append(
-        Location(address=end_address, city="", zip_code="", lat=end_lat, lng=end_lng, customer="End", index=-1)
-    )
-
-    start_idx = 0
-    end_idx = len(locations) - 1
-
-    matrix = get_distance_matrix(locations, api_key)
-    route_indices = solve_tsp(matrix, start_idx, end_idx)
+    dist_matrix, dur_matrix = get_distance_matrix(locations, api_key)
+    route_indices = solve_tsp(dist_matrix, 0)
 
     stops = []
-    for stop_num, loc_idx in enumerate(route_indices, 1):
+    for i, loc_idx in enumerate(route_indices):
         loc = locations[loc_idx]
+        if i == 0:
+            duration_seconds = 0
+        else:
+            prev_loc_idx = route_indices[i - 1]
+            duration_seconds = dur_matrix[prev_loc_idx][loc_idx]
         stops.append(
             RouteStop(
-                stop_number=stop_num,
+                stop_number=i + 1,
                 customer=loc.customer,
                 address=loc.address,
                 city=loc.city,
                 zip_code=loc.zip_code,
                 order_index=loc.index,
+                duration_seconds=duration_seconds,
             )
         )
 

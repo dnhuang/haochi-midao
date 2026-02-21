@@ -25,6 +25,7 @@ class UploadResponse(BaseModel):
     orders: List[OrderItem]
     discrepancies: List[Discrepancy]
     food_columns: List[str]
+    format: str
 
 
 class MenuItem(BaseModel):
@@ -68,7 +69,6 @@ class RouteOrderInput(BaseModel):
 class RouteRequest(BaseModel):
     orders: List[RouteOrderInput]
     start_address: str
-    end_address: str
 
 
 class RouteStopResponse(BaseModel):
@@ -78,6 +78,7 @@ class RouteStopResponse(BaseModel):
     city: str
     zip_code: str
     order_index: int
+    duration_seconds: int
 
 
 class RouteResponse(BaseModel):

@@ -22,9 +22,9 @@ haochi-midao/
 │   │   ├── api.ts         # Fetch wrappers for all endpoints
 │   │   ├── types.ts       # TypeScript interfaces
 │   │   ├── index.css      # Tailwind imports + fade-in animation
-│   │   ├── components/    # LoginForm, FileUpload, OrderTable, AnalysisResults, LabelPreview, DiscrepancyWarning, AddOrderForm
+│   │   ├── components/    # LoginForm, FileUpload, OrderTable, AnalysisResults, LabelPreview, DiscrepancyWarning, AddOrderForm, GroupBar
 │   │   ├── hooks/         # useAuth, useDragSelect
-│   │   └── pages/         # AnalyzePage, LabelsPage, PreviewEditPage
+│   │   └── pages/         # AnalyzePage, LabelsPage, PreviewEditPage, RoutingPage
 │   ├── tests/             # Vitest unit tests
 │   ├── e2e/               # Playwright e2e tests
 │   └── vite.config.ts     # Tailwind plugin + /api proxy
@@ -36,7 +36,8 @@ haochi-midao/
 │   │   ├── auth.py        # X-Password header verification
 │   │   ├── config.py      # Password from env var or config.json
 │   │   ├── schemas.py     # Pydantic request/response models
-│   │   └── routers/       # upload, menu, analyze, labels
+│   │   ├── routing.py     # Delivery route optimization logic
+│   │   └── routers/       # upload, menu, analyze, labels, routing
 │   ├── data/
 │   │   └── menu.csv       # Food item reference database
 │   ├── tests/             # pytest test suite
@@ -54,12 +55,12 @@ make install
 
 # Backend
 cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000   # dev server
-cd backend && .venv/bin/pytest                                       # tests (25 tests)
+cd backend && .venv/bin/pytest                                       # tests (42 tests)
 cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check .  # lint
 
 # Frontend (requires Node 18.12+, uses pnpm)
 cd frontend && pnpm dev                  # dev server (port 5173, proxies /api → :8000)
-cd frontend && pnpm test -- --run        # unit tests (12 tests)
+cd frontend && pnpm test -- --run        # unit tests (19 tests)
 cd frontend && pnpm run lint             # type-check (tsc --noEmit)
 cd frontend && pnpm exec playwright test # e2e (needs both servers running)
 
@@ -158,6 +159,17 @@ Parsing steps:
 
 After parsing all orders, each food item's column total is compared against the `商品汇总` table. Returns `[(food_item, parsed_total, expected_total)]` for mismatches. Items not present in the summary table (not ordered that batch) are skipped. Whitespace is normalized before comparison.
 
+### Data Cleaning (in `process_excel`)
+
+After parsing columns, two cleaning steps run automatically:
+
+1. **City normalization**: `BAY_AREA_ZIP_TO_CITY` dict (~130 entries) maps zip codes to canonical city names. Always overrides the city column when a zip match is found. Covers East Bay, South Bay, and Peninsula.
+2. **Address cleaning** (`clean_address`): Extracts street portion from full addresses.
+   - If commas present: takes first comma-separated segment
+   - Otherwise: strips trailing zip code, state ("CA"/"California"), and known city name
+
+The upload response includes a `format` field (`"raw"` or `"formatted"`) so the frontend can apply format-specific defaults (grouping, label visibility).
+
 ### Order Aggregation (`DeliveryOrderAnalyzer`)
 
 - Identifies food columns as `df.columns[7:]` that contain Chinese characters (regex `[\u4e00-\u9fff]`)
@@ -190,10 +202,11 @@ Generates Avery 5167 label sheets:
 
 | Method | Path              | Description                                                    | Phase |
 |--------|-------------------|----------------------------------------------------------------|-------|
-| POST   | `/upload`         | Accept xlsx file, parse orders, return orders + discrepancies  | 1     |
+| POST   | `/upload`         | Accept xlsx, parse orders, return orders + discrepancies + format | 1   |
 | POST   | `/analyze`        | Accept selected order indices, return sorted items + totals    | 2     |
 | POST   | `/labels`         | Accept sorted items, return PDF bytes                          | 3     |
 | GET    | `/menu`           | Return menu.csv contents                                       | 1     |
+| POST   | `/route`          | Accept orders + start address, return optimized delivery stops | 4     |
 
 ## Frontend Views
 
@@ -201,23 +214,39 @@ Generates Avery 5167 label sheets:
 |--------------|-------------------------------------------------------------------------------|-------|
 | Login        | Password input, centered layout, Dudu avatar above login box                  | 1     |
 | Upload       | File upload widget, process button (disabled until file selected), Bubu & Dudu illustration below | 1 |
-| Preview/Edit | Review parsed orders in expandable table, add manual orders via modal form (quantity steppers, menu item select), edit/remove manual orders (pencil/X icons), discrepancy warnings, Continue button | 1.5 |
+| Preview/Edit | Review parsed orders in expandable table with inline-editable fields (customer, address, city, zip, label, group), add manual orders via modal, discrepancy warnings, validation for empty required fields, Continue button | 1.5 |
 | Analyze      | Order table with click-and-drag multi-select, Select All / Clear All / Analyze in toolbar row, analysis results (item list with non-selectable index column, summary metrics, bar chart, detailed report), CSV/report downloads | 2 |
 | Labels       | Preview table with bordered gridlines matching analysis table, PDF download button | 3 |
-| Routing      | TBD                                                                           | 4     |
+| Routing      | Order table with route optimization, start address input, optimized stop list | 4     |
 
 ### Preview/Edit Page Flow
 
 After file upload, users land on the Preview/Edit page before analysis:
 ```
-FileUpload → PreviewEditPage → Tab bar (Analyze | Labels)
+FileUpload → PreviewEditPage → Tab bar (Analyze | Labels | Routing)
 ```
 
 - `App.tsx` manages `confirmedOrders` state — tab bar only renders after confirmation
-- Manual orders are tracked via `manualIndices` Set; they display a "Manual" badge and edit/remove icons
+- Manual orders are tracked via `isManual` flag; they display a "Manual" badge and edit/remove icons
 - `AddOrderForm` renders as a modal overlay with fade-in animation; accepts an optional `initial` prop for edit mode
 - On "Continue", orders are re-indexed to contiguous 0-based indices before passing to analysis
 - "Back to Preview" header button clears confirmed orders and returns to preview
+
+### Table Columns
+
+Order tables (PreviewEditPage and OrderTable) share a common column layout:
+
+`[drag handle] [expand] [Label?] Group Customer Address City Zip Items [actions?]`
+
+- **Label column**: togglable via eye icon in header. Default: shown for formatted files, hidden for raw files
+- **All fields editable** in PreviewEditPage (inline `<input>` elements)
+- **Required field validation**: customer, address, city, zip_code — red border + asterisk when empty, Continue button disabled
+
+### Grouping
+
+- **Formatted files**: all orders assigned to single group "A"
+- **Raw files**: grouped by city (derived from zip code lookup). Groups named A, B, C... (spreadsheet-style AA, AB after Z). Orders sorted by city then zip within each group
+- Groups manageable via GroupBar component (add/delete groups, click to select)
 
 ## Authentication
 

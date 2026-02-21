@@ -76,15 +76,16 @@ def _read_summary_formatted(excel_file) -> Dict[str, int]:
     if summary_start is None:
         return {}
 
-    # Next row has sub-headers: find '商品' and '数量' columns
+    # Next row has sub-headers: find first '商品' and '数量' columns
+    # (extra columns like 周五送货/周六送货 may repeat '数量' — take the first)
     header_row = df_raw.iloc[summary_start + 1]
     item_col = None
     qty_col = None
     for c in df_raw.columns:
         val = str(header_row[c]).strip()
-        if val == "商品":
+        if val == "商品" and item_col is None:
             item_col = c
-        elif val == "数量":
+        elif val == "数量" and qty_col is None:
             qty_col = c
 
     if item_col is None or qty_col is None:
@@ -136,12 +137,170 @@ def validate_against_summary(
     return discrepancies
 
 
-def process_excel(excel_file, food_items: List[str]) -> Tuple[pd.DataFrame, List[Tuple[str, int, int]]]:
+BAY_AREA_ZIP_TO_CITY: Dict[str, str] = {
+    # East Bay - Alameda County
+    "94536": "Fremont",
+    "94538": "Fremont",
+    "94539": "Fremont",
+    "94555": "Fremont",
+    "94587": "Union City",
+    "94560": "Newark",
+    "94541": "Hayward",
+    "94542": "Hayward",
+    "94544": "Hayward",
+    "94545": "Hayward",
+    "94546": "Castro Valley",
+    "94552": "Castro Valley",
+    "94577": "San Leandro",
+    "94578": "San Leandro",
+    "94579": "San Leandro",
+    "94568": "Dublin",
+    "94566": "Pleasanton",
+    "94588": "Pleasanton",
+    "94550": "Livermore",
+    "94551": "Livermore",
+    "94601": "Oakland",
+    "94602": "Oakland",
+    "94603": "Oakland",
+    "94605": "Oakland",
+    "94606": "Oakland",
+    "94607": "Oakland",
+    "94609": "Oakland",
+    "94610": "Oakland",
+    "94611": "Oakland",
+    "94612": "Oakland",
+    "94618": "Oakland",
+    "94619": "Oakland",
+    "94621": "Oakland",
+    "94702": "Berkeley",
+    "94703": "Berkeley",
+    "94704": "Berkeley",
+    "94705": "Berkeley",
+    "94707": "Berkeley",
+    "94708": "Berkeley",
+    "94709": "Berkeley",
+    "94710": "Berkeley",
+    "94501": "Alameda",
+    "94502": "Alameda",
+    "94706": "Albany",
+    "94608": "Emeryville",
+    # South Bay - Santa Clara County
+    "95035": "Milpitas",
+    "95110": "San Jose",
+    "95111": "San Jose",
+    "95112": "San Jose",
+    "95113": "San Jose",
+    "95116": "San Jose",
+    "95117": "San Jose",
+    "95118": "San Jose",
+    "95119": "San Jose",
+    "95120": "San Jose",
+    "95121": "San Jose",
+    "95122": "San Jose",
+    "95123": "San Jose",
+    "95124": "San Jose",
+    "95125": "San Jose",
+    "95126": "San Jose",
+    "95127": "San Jose",
+    "95128": "San Jose",
+    "95129": "San Jose",
+    "95130": "San Jose",
+    "95131": "San Jose",
+    "95132": "San Jose",
+    "95133": "San Jose",
+    "95134": "San Jose",
+    "95135": "San Jose",
+    "95136": "San Jose",
+    "95138": "San Jose",
+    "95139": "San Jose",
+    "95148": "San Jose",
+    "95050": "Santa Clara",
+    "95051": "Santa Clara",
+    "95054": "Santa Clara",
+    "94085": "Sunnyvale",
+    "94086": "Sunnyvale",
+    "94087": "Sunnyvale",
+    "94089": "Sunnyvale",
+    "95014": "Cupertino",
+    "94040": "Mountain View",
+    "94041": "Mountain View",
+    "94043": "Mountain View",
+    "94022": "Los Altos",
+    "94024": "Los Altos",
+    "94301": "Palo Alto",
+    "94302": "Palo Alto",
+    "94303": "Palo Alto",
+    "94304": "Palo Alto",
+    "94306": "Palo Alto",
+    "95008": "Campbell",
+    "95070": "Saratoga",
+    "95030": "Los Gatos",
+    "95032": "Los Gatos",
+    "95033": "Los Gatos",
+    "95020": "Gilroy",
+    "95037": "Morgan Hill",
+    # Peninsula - San Mateo County
+    "94014": "Daly City",
+    "94015": "Daly City",
+    "94005": "Brisbane",
+    "94080": "South San Francisco",
+    "94066": "San Bruno",
+    "94030": "Millbrae",
+    "94010": "Burlingame",
+    "94401": "San Mateo",
+    "94402": "San Mateo",
+    "94403": "San Mateo",
+    "94404": "San Mateo",
+    "94002": "Belmont",
+    "94070": "San Carlos",
+    "94061": "Redwood City",
+    "94062": "Redwood City",
+    "94063": "Redwood City",
+    "94065": "Redwood City",
+    "94025": "Menlo Park",
+    "94027": "Atherton",
+    "94028": "Portola Valley",
+    "94044": "Pacifica",
+    "94019": "Half Moon Bay",
+}
+
+_STATE_PATTERN = re.compile(r",?\s*\b(?:CA|California)\b\.?\s*$", re.IGNORECASE)
+_ZIP_PATTERN = re.compile(r",?\s*\b\d{5}(?:-\d{4})?\s*$")
+
+
+def clean_address(address: str, city: str) -> str:
+    """Extract street portion from a full address string.
+
+    Strategy:
+    1. If commas present, take the first segment.
+    2. Otherwise, strip trailing zip, state, and city name.
+    """
+    addr = address.strip()
+    if not addr:
+        return addr
+
+    if "," in addr:
+        return addr.split(",")[0].strip()
+
+    # Strip trailing zip code
+    addr = _ZIP_PATTERN.sub("", addr).strip()
+    # Strip trailing state
+    addr = _STATE_PATTERN.sub("", addr).strip()
+    # Strip trailing city name (case-insensitive)
+    if city:
+        city_pattern = re.compile(r",?\s*" + re.escape(city) + r"\s*$", re.IGNORECASE)
+        addr = city_pattern.sub("", addr).strip()
+
+    return addr
+
+
+def process_excel(excel_file, food_items: List[str]) -> Tuple[pd.DataFrame, List[Tuple[str, int, int]], str]:
     """
     Process an uploaded Excel file into a DataFrame with food item quantity columns.
     Auto-detects raw WeChat export vs human-formatted files.
-    Returns (df, discrepancies) where discrepancies is a list of
-    (food_item, parsed_total, expected_total) for any summary table mismatches.
+    Returns (df, discrepancies, fmt) where discrepancies is a list of
+    (food_item, parsed_total, expected_total) for any summary table mismatches
+    and fmt is 'raw' or 'formatted'.
     Raises ValueError on bad input structure.
     """
     fmt = detect_format(excel_file)
@@ -190,6 +349,16 @@ def process_excel(excel_file, food_items: List[str]) -> Tuple[pd.DataFrame, List
     df["phone_number"] = df["phone_number"].apply(_to_str)
     df["zip_code"] = df["zip_code"].apply(_to_str)
 
+    # Normalize city from zip code lookup, then clean address
+    df["city"] = df.apply(
+        lambda row: BAY_AREA_ZIP_TO_CITY.get(row["zip_code"], str(row["city"]) if pd.notna(row["city"]) else ""),
+        axis=1,
+    )
+    df["address"] = df.apply(
+        lambda row: clean_address(str(row["address"]) if pd.notna(row["address"]) else "", row["city"]),
+        axis=1,
+    )
+
     if len(df) == 0:
         raise ValueError("No orders found. Make sure you're uploading a valid WeChat export .xlsx file.")
 
@@ -236,7 +405,7 @@ def process_excel(excel_file, food_items: List[str]) -> Tuple[pd.DataFrame, List
                     break
 
     discrepancies = validate_against_summary(df, food_items, summary_dict)
-    return df, discrepancies
+    return df, discrepancies, fmt
 
 
 class DeliveryOrderAnalyzer:

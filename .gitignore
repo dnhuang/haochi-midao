@@ -15,6 +15,7 @@ backend/config.json
 
 # Data files (real customer data)
 backend/data/*.xlsx
+backend/data/geocode_cache.json
 
 # OS
 .DS_Store
