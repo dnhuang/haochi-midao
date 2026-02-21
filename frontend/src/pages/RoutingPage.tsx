@@ -24,9 +24,11 @@ interface RoutingPageProps {
   orders: OrderItem[];
   password: string;
   groupColors: Record<string, string>;
+  showLabel?: boolean;
+  onToggleLabel?: () => void;
 }
 
-export default function RoutingPage({ orders, password, groupColors }: RoutingPageProps) {
+export default function RoutingPage({ orders, password, groupColors, showLabel, onToggleLabel }: RoutingPageProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [startAddress, setStartAddress] = useState(DEFAULT_START_ADDRESS);
   const [routeResult, setRouteResult] = useState<RouteResponse | null>(null);
@@ -125,6 +127,8 @@ export default function RoutingPage({ orders, password, groupColors }: RoutingPa
           onSelectionChange={setSelected}
           groupColors={groupColors}
           onSelectGroup={handleSelectGroup}
+          showLabel={showLabel}
+          onToggleLabel={onToggleLabel}
           toolbarAction={
             <div className="flex items-center gap-3">
               {error && <p className="text-red-600 text-sm">{error}</p>}

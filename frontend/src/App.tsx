@@ -127,6 +127,19 @@ function App() {
     setOrders((prev) => prev.map((o) => (o.group === name ? { ...o, group: undefined } : o)));
   };
 
+  const handleRenameGroup = (oldName: string, newName: string) => {
+    setGroupColors((prev) => {
+      const next: Record<string, string> = {};
+      for (const [k, v] of Object.entries(prev)) {
+        next[k === oldName ? newName : k] = v;
+      }
+      return next;
+    });
+    setOrders((prev) =>
+      prev.map((o) => (o.group === oldName ? { ...o, group: newName } : o)),
+    );
+  };
+
   const handleReorderOrders = (newOrders: OrderItem[]) => {
     setOrders(newOrders);
   };
@@ -196,6 +209,7 @@ function App() {
             onGroupChange={handleGroupChange}
             onAddGroup={handleAddGroup}
             onDeleteGroup={handleDeleteGroup}
+            onRenameGroup={handleRenameGroup}
             onReorder={handleReorderOrders}
             showLabel={showLabel}
             onToggleLabel={() => setShowLabel((v) => !v)}
@@ -205,12 +219,7 @@ function App() {
             orders={orders}
             password={password}
             onAnalysis={setSortedItems}
-            onLabelChange={handleLabelChange}
             groupColors={groupColors}
-            onGroupChange={handleGroupChange}
-            onAddGroup={handleAddGroup}
-            onDeleteGroup={handleDeleteGroup}
-            onReorder={handleReorderOrders}
             showLabel={showLabel}
             onToggleLabel={() => setShowLabel((v) => !v)}
           />
@@ -221,6 +230,8 @@ function App() {
             orders={orders}
             password={password}
             groupColors={groupColors}
+            showLabel={showLabel}
+            onToggleLabel={() => setShowLabel((v) => !v)}
           />
         )}
       </main>

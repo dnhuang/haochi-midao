@@ -8,12 +8,7 @@ interface AnalyzePageProps {
   orders: OrderItem[];
   password: string;
   onAnalysis: (items: SortedItem[]) => void;
-  onLabelChange: (index: number, newLabel: string) => void;
   groupColors: Record<string, string>;
-  onGroupChange: (index: number, group: string) => void;
-  onAddGroup: (name: string) => void;
-  onDeleteGroup: (name: string) => void;
-  onReorder: (reorderedOrders: OrderItem[]) => void;
   showLabel?: boolean;
   onToggleLabel?: () => void;
 }
@@ -22,12 +17,7 @@ export default function AnalyzePage({
   orders,
   password,
   onAnalysis,
-  onLabelChange,
   groupColors,
-  onGroupChange,
-  onAddGroup,
-  onDeleteGroup,
-  onReorder,
   showLabel,
   onToggleLabel,
 }: AnalyzePageProps) {
@@ -69,13 +59,8 @@ export default function AnalyzePage({
           orders={orders}
           selected={selected}
           onSelectionChange={setSelected}
-          onLabelChange={onLabelChange}
           groupColors={groupColors}
-          onGroupChange={onGroupChange}
-          onAddGroup={onAddGroup}
-          onDeleteGroup={onDeleteGroup}
           onSelectGroup={handleSelectGroup}
-          onReorder={onReorder}
           showLabel={showLabel}
           onToggleLabel={onToggleLabel}
           toolbarAction={

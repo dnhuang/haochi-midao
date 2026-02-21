@@ -16,6 +16,7 @@ interface PreviewEditPageProps {
   onGroupChange: (index: number, group: string) => void;
   onAddGroup: (name: string) => void;
   onDeleteGroup: (name: string) => void;
+  onRenameGroup: (oldName: string, newName: string) => void;
   onReorder: (reorderedOrders: OrderItem[]) => void;
   showLabel: boolean;
   onToggleLabel: () => void;
@@ -59,6 +60,7 @@ export default function PreviewEditPage({
   onGroupChange,
   onAddGroup,
   onDeleteGroup,
+  onRenameGroup,
   onReorder,
   showLabel,
   onToggleLabel,
@@ -196,6 +198,7 @@ export default function PreviewEditPage({
         orders={orders}
         onAddGroup={onAddGroup}
         onDeleteGroup={onDeleteGroup}
+        onRenameGroup={onRenameGroup}
       />
 
       {/* Order table */}
