@@ -22,6 +22,7 @@ haochi-midao/
 │   │   ├── api.ts         # Fetch wrappers for all endpoints
 │   │   ├── types.ts       # TypeScript interfaces
 │   │   ├── index.css      # Tailwind imports + fade-in animation
+│   │   ├── groupConfig.ts # Predefined delivery group mappings, colors, assign + sort
 │   │   ├── components/    # LoginForm, FileUpload, OrderTable, AnalysisResults, LabelPreview, DiscrepancyWarning, AddOrderForm, GroupBar
 │   │   ├── hooks/         # useAuth, useDragSelect
 │   │   └── pages/         # AnalyzePage, LabelsPage, PreviewEditPage, RoutingPage
@@ -245,7 +246,14 @@ Order tables (PreviewEditPage and OrderTable) share a common column layout:
 ### Grouping
 
 - **Formatted files**: all orders assigned to single group "A"
-- **Raw files**: grouped by city (derived from zip code lookup). Groups named A, B, C... (spreadsheet-style AA, AB after Z). Orders sorted by city then zip within each group
+- **Raw files**: assigned to predefined delivery groups via `groupConfig.ts`:
+  - **Pickup** — San Ramon
+  - **Fri-P** (Friday Parents) — Hayward, Fremont, Milpitas, Newark, San Jose 95132/95133
+  - **Fri-K** (Friday Kids) — Sunnyvale 94086, Mountain View 94043
+  - **Sat-P** (Saturday Parents) — Saratoga, Cupertino, San Francisco, Palo Alto, Los Altos, Santa Clara, Belmont, San Mateo, Redwood City, Atherton, San Carlos, Los Gatos, Sunnyvale 94087, San Jose 95129, Mountain View 94040
+  - **Sat-K** (Saturday Kids) — Albany, San Leandro
+  - Ambiguous cities (San Jose, Sunnyvale, Mountain View) are matched by zip code; unambiguous cities by name
+  - Unmapped orders have no group; user assigns manually
 - Groups manageable via GroupBar component (add/delete groups, click to select)
 
 ## Authentication
