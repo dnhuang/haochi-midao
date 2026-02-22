@@ -3,7 +3,7 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
-from app.analyzer import load_food_items, process_excel
+from app.analyzer import load_food_items, load_food_label_map, process_excel
 from app.auth import verify_password
 from app.schemas import Discrepancy, OrderItem, UploadResponse
 
@@ -20,7 +20,8 @@ async def upload(file: UploadFile, _password: str = Depends(verify_password)):
 
     try:
         food_items = load_food_items()
-        df, raw_discrepancies = process_excel(excel_file, food_items)
+        food_label_map = load_food_label_map()
+        df, raw_discrepancies, fmt = process_excel(excel_file, food_items)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -48,4 +49,10 @@ async def upload(file: UploadFile, _password: str = Depends(verify_password)):
 
     discrepancies = [Discrepancy(food_item=d[0], parsed_total=d[1], expected_total=d[2]) for d in raw_discrepancies]
 
-    return UploadResponse(orders=orders, discrepancies=discrepancies, food_columns=food_columns)
+    return UploadResponse(
+        orders=orders,
+        discrepancies=discrepancies,
+        food_columns=food_columns,
+        format=fmt,
+        food_column_labels=food_label_map,
+    )

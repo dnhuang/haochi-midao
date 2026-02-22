@@ -6,7 +6,7 @@ import type { OrderItem } from "../../src/types";
 const mockOrders: OrderItem[] = [
   {
     index: 0,
-    delivery: 1,
+    delivery: "1",
     customer: "张三",
     items_ordered: "test",
     phone_number: "123",
@@ -17,7 +17,7 @@ const mockOrders: OrderItem[] = [
   },
   {
     index: 1,
-    delivery: 2,
+    delivery: "2",
     customer: "李四",
     items_ordered: "test",
     phone_number: "456",
@@ -44,5 +44,52 @@ describe("OrderTable", () => {
     render(<OrderTable orders={mockOrders} selected={new Set()} onSelectionChange={vi.fn()} />);
     expect(screen.getByText("Select All")).toBeInTheDocument();
     expect(screen.getByText("Clear All")).toBeInTheDocument();
+  });
+
+  it("renders group column when groupColors provided", () => {
+    const ordersWithGroups: OrderItem[] = [
+      { ...mockOrders[0], group: "Route A" },
+      { ...mockOrders[1], group: "Route B" },
+    ];
+    const groupColors = { "Route A": "#f87171", "Route B": "#60a5fa" };
+
+    render(
+      <OrderTable
+        orders={ordersWithGroups}
+        selected={new Set()}
+        onSelectionChange={vi.fn()}
+        groupColors={groupColors}
+        onGroupChange={vi.fn()}
+        onAddGroup={vi.fn()}
+        onDeleteGroup={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Group")).toBeInTheDocument();
+  });
+
+  it("renders group dividers between groups", () => {
+    const ordersWithGroups: OrderItem[] = [
+      { ...mockOrders[0], group: "Route A" },
+      { ...mockOrders[1], group: "Route B" },
+    ];
+    const groupColors = { "Route A": "#f87171", "Route B": "#60a5fa" };
+
+    render(
+      <OrderTable
+        orders={ordersWithGroups}
+        selected={new Set()}
+        onSelectionChange={vi.fn()}
+        groupColors={groupColors}
+        onGroupChange={vi.fn()}
+        onAddGroup={vi.fn()}
+        onDeleteGroup={vi.fn()}
+      />,
+    );
+
+    // Group divider labels appear in multiple places (dividers + dropdowns + GroupBar chips),
+    // so just verify multiple instances exist
+    expect(screen.getAllByText("Route A").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Route B").length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -8,6 +8,8 @@ def test_upload_success(client, auth_headers, sample_xlsx_bytes):
     assert "orders" in data
     assert "discrepancies" in data
     assert "food_columns" in data
+    assert "format" in data
+    assert data["format"] in ("raw", "formatted")
     assert len(data["orders"]) == 4
 
 

@@ -3,18 +3,20 @@ import type { AnalyzeResponse } from "../types";
 
 interface AnalysisResultsProps {
   data: AnalyzeResponse;
+  foodColumnLabels?: Record<string, string>;
 }
 
 type ResultTab = "items" | "summary" | "report";
 
-export default function AnalysisResults({ data }: AnalysisResultsProps) {
+export default function AnalysisResults({ data, foodColumnLabels }: AnalysisResultsProps) {
   const [tab, setTab] = useState<ResultTab>("items");
 
+  const displayName = (n: string) => foodColumnLabels?.[n] || n;
   const maxQty = data.sorted_items.length > 0 ? data.sorted_items[0].quantity : 1;
 
   const csvContent = [
     "Item,Quantity",
-    ...data.sorted_items.map((i) => `"${i.item_name}",${i.quantity}`),
+    ...data.sorted_items.map((i) => `"${displayName(i.item_name)}",${i.quantity}`),
   ].join("\n");
 
   const reportContent = [
@@ -23,7 +25,7 @@ export default function AnalysisResults({ data }: AnalysisResultsProps) {
     `Total items: ${data.total_items}`,
     "",
     "Item Breakdown:",
-    ...data.sorted_items.map((i) => `  ${i.item_name}: ${i.quantity}`),
+    ...data.sorted_items.map((i) => `  ${displayName(i.item_name)}: ${i.quantity}`),
   ].join("\n");
 
   const download = (content: string, filename: string, type: string) => {
@@ -80,7 +82,7 @@ export default function AnalysisResults({ data }: AnalysisResultsProps) {
                 {data.sorted_items.map((item, i) => (
                   <tr key={item.item_name} className="even:bg-gray-50">
                     <td className="border border-gray-300 px-3 py-1.5 text-gray-400 text-right select-none">{i + 1}</td>
-                    <td className="border border-gray-300 px-3 py-1.5">{item.item_name}</td>
+                    <td className="border border-gray-300 px-3 py-1.5">{displayName(item.item_name)}</td>
                     <td className="border border-gray-300 px-3 py-1.5 text-right">{item.quantity}</td>
                   </tr>
                 ))}
@@ -109,7 +111,7 @@ export default function AnalysisResults({ data }: AnalysisResultsProps) {
             <div className="space-y-2">
               {data.sorted_items.map((item) => (
                 <div key={item.item_name} className="flex items-center gap-3">
-                  <div className="w-40 text-sm text-right truncate">{item.item_name}</div>
+                  <div className="w-40 text-sm text-right truncate">{displayName(item.item_name)}</div>
                   <div className="flex-1 bg-gray-100 rounded h-6">
                     <div
                       className="bg-rose-400 h-6 rounded flex items-center justify-end pr-2"

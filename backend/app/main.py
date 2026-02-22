@@ -4,7 +4,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import analyze, labels, menu, upload
+from app.routers import analyze, labels, menu, routing, upload
 
 app = FastAPI(title="haochi-midao")
 
@@ -21,6 +21,7 @@ api_router.include_router(upload.router)
 api_router.include_router(menu.router)
 api_router.include_router(analyze.router)
 api_router.include_router(labels.router)
+api_router.include_router(routing.router)
 app.include_router(api_router)
 
 

@@ -36,10 +36,11 @@ def test_read_summary_table(sample_xlsx_path):
 def test_process_excel_basic(sample_xlsx_path):
     food_items = load_food_items()
     with open(sample_xlsx_path, "rb") as f:
-        df, discrepancies = process_excel(f, food_items)
+        df, discrepancies, fmt = process_excel(f, food_items)
 
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 4  # 4 orders in fixture
+    assert fmt in ("raw", "formatted")
     # Standard columns present
     for col in ["delivery", "customer", "items_ordered", "phone_number", "address", "city", "zip_code"]:
         assert col in df.columns
@@ -48,7 +49,7 @@ def test_process_excel_basic(sample_xlsx_path):
 def test_process_excel_item_parsing(sample_xlsx_path):
     food_items = load_food_items()
     with open(sample_xlsx_path, "rb") as f:
-        df, _ = process_excel(f, food_items)
+        df, _, _fmt = process_excel(f, food_items)
 
     # Order 1 (index 0): 烧卖 x3, 馄饨 x2
     assert df.at[0, "肉末香茹胡罗卜糯米烧卖15个/份"] == 3
@@ -79,7 +80,7 @@ def test_process_excel_no_orders():
 def test_process_excel_discrepancies(sample_xlsx_path):
     food_items = load_food_items()
     with open(sample_xlsx_path, "rb") as f:
-        _, discrepancies = process_excel(f, food_items)
+        _, discrepancies, _fmt = process_excel(f, food_items)
     # Our fixture should have matching totals, so no discrepancies
     assert isinstance(discrepancies, list)
 
@@ -112,7 +113,7 @@ def test_validate_against_summary_skips_absent():
 def test_analyzer_load(sample_xlsx_path):
     food_items = load_food_items()
     with open(sample_xlsx_path, "rb") as f:
-        df, _ = process_excel(f, food_items)
+        df, _, _fmt = process_excel(f, food_items)
 
     analyzer = DeliveryOrderAnalyzer()
     analyzer.load(df)
@@ -127,7 +128,7 @@ def test_analyzer_load(sample_xlsx_path):
 def test_analyzer_analyze_basic(sample_xlsx_path):
     food_items = load_food_items()
     with open(sample_xlsx_path, "rb") as f:
-        df, _ = process_excel(f, food_items)
+        df, _, _fmt = process_excel(f, food_items)
 
     analyzer = DeliveryOrderAnalyzer()
     analyzer.load(df)

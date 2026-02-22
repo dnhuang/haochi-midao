@@ -4,3 +4,5 @@ pandas
 openpyxl
 reportlab
 python-multipart
+ortools
+requests

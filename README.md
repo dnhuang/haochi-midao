@@ -25,7 +25,7 @@ Requires Python 3.7+ and Node.js 18.12+.
 ## Application Flow
 
 ```
-Login → Upload (.xlsx) → Preview/Edit Orders → Analyze → Labels
+Login → Upload (.xlsx) → Preview/Edit Orders → Analyze | Labels | Routing
 ```
 
 1. **Login** — Password-protected entry with Dudu mascot
@@ -33,6 +33,7 @@ Login → Upload (.xlsx) → Preview/Edit Orders → Analyze → Labels
 3. **Preview/Edit** — Review parsed orders, add/edit/remove manual orders before analysis. Discrepancy warnings shown if parsed totals don't match the WeChat summary table
 4. **Analyze** — Select orders via click-and-drag, view aggregated results (item list, summary metrics, bar chart, report). Download CSV or text report
 5. **Labels** — Preview and download Avery 5167 label PDFs for the analyzed items
+6. **Routing** — Select orders, set start address and departure time, get optimized delivery route with traffic-aware travel times via Google Maps API
 
 ## Features
 
@@ -43,6 +44,7 @@ Login → Upload (.xlsx) → Preview/Edit Orders → Analyze → Labels
 - Analysis results with three views: item list, summary with bar chart, text report
 - CSV and report downloads
 - Avery 5167 label PDF generation with Chinese character support
+- Delivery route optimization with traffic-aware travel times (Google Maps Distance Matrix API)
 - Rose/pink themed UI with Bubu & Dudu branding
 
 ## Testing
@@ -51,10 +53,10 @@ Login → Upload (.xlsx) → Preview/Edit Orders → Analyze → Labels
 # All tests
 make test
 
-# Backend only (25 tests)
+# Backend only (43 tests)
 cd backend && .venv/bin/pytest
 
-# Frontend only (12 tests)
+# Frontend only (19 tests)
 cd frontend && pnpm test -- --run
 
 # Type-check frontend
@@ -76,6 +78,7 @@ haochi-midao/
 │   │   │   ├── AnalysisResults.tsx
 │   │   │   ├── DiscrepancyWarning.tsx
 │   │   │   ├── FileUpload.tsx
+│   │   │   ├── GroupBar.tsx
 │   │   │   ├── LabelPreview.tsx
 │   │   │   ├── LoginForm.tsx
 │   │   │   └── OrderTable.tsx
@@ -83,7 +86,8 @@ haochi-midao/
 │   │   └── pages/
 │   │       ├── AnalyzePage.tsx
 │   │       ├── LabelsPage.tsx
-│   │       └── PreviewEditPage.tsx
+│   │       ├── PreviewEditPage.tsx
+│   │       └── RoutingPage.tsx
 │   ├── public/                  # Bubu & Dudu image assets
 │   ├── tests/                   # Vitest unit tests
 │   └── e2e/                     # Playwright e2e tests
@@ -92,9 +96,11 @@ haochi-midao/
 │   │   ├── main.py              # FastAPI entry point
 │   │   ├── analyzer.py          # Order parsing and analysis
 │   │   ├── labels.py            # PDF label generation
+│   │   ├── routing.py           # Delivery route optimization
 │   │   ├── auth.py              # Password verification
+│   │   ├── config.py            # Password + API keys from env/config
 │   │   ├── schemas.py           # Pydantic models
-│   │   └── routers/             # upload, menu, analyze, labels
+│   │   └── routers/             # upload, menu, analyze, labels, routing
 │   ├── data/menu.csv            # Food item reference database
 │   └── tests/                   # pytest suite
 └── Makefile

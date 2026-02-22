@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, MenuResponse, UploadResponse } from "./types";
+import type { AnalyzeResponse, MenuResponse, RouteResponse, UploadResponse } from "./types";
 
 const BASE = "/api";
 
@@ -39,6 +39,24 @@ export async function analyzeOrders(
     method: "POST",
     headers: { ...authHeaders(password), "Content-Type": "application/json" },
     body: JSON.stringify({ orders }),
+  });
+  return res.json();
+}
+
+export async function routeOrders(
+  password: string,
+  orders: { index: number; customer: string; address: string; city: string; zip_code: string }[],
+  startAddress: string,
+  departureTime?: number,
+): Promise<RouteResponse> {
+  const res = await apiFetch("/route", {
+    method: "POST",
+    headers: { ...authHeaders(password), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      orders,
+      start_address: startAddress,
+      ...(departureTime !== undefined && { departure_time: departureTime }),
+    }),
   });
   return res.json();
 }

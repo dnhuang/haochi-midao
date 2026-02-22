@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from "react";
 type DragMode = "select" | "deselect" | null;
 
 export function useDragSelect(
-  count: number,
+  orderIndices: number[],
   selected: Set<number>,
   onChange: (selected: Set<number>) => void,
 ) {
@@ -48,8 +48,8 @@ export function useDragSelect(
   }, []);
 
   const selectAll = useCallback(() => {
-    onChange(new Set(Array.from({ length: count }, (_, i) => i)));
-  }, [count, onChange]);
+    onChange(new Set(orderIndices));
+  }, [orderIndices, onChange]);
 
   const clearAll = useCallback(() => {
     onChange(new Set());

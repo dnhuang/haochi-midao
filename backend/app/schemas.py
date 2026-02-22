@@ -25,6 +25,8 @@ class UploadResponse(BaseModel):
     orders: List[OrderItem]
     discrepancies: List[Discrepancy]
     food_columns: List[str]
+    format: str
+    food_column_labels: Dict[str, str]
 
 
 class MenuItem(BaseModel):
@@ -55,3 +57,32 @@ class AnalyzeResponse(BaseModel):
 
 class LabelsRequest(BaseModel):
     sorted_items: List[SortedItem]
+
+
+class RouteOrderInput(BaseModel):
+    index: int
+    customer: str
+    address: str
+    city: str
+    zip_code: str
+
+
+class RouteRequest(BaseModel):
+    orders: List[RouteOrderInput]
+    start_address: str
+    departure_time: int | None = None
+
+
+class RouteStopResponse(BaseModel):
+    stop_number: int
+    customer: str
+    address: str
+    city: str
+    zip_code: str
+    order_index: int
+    duration_seconds: int
+
+
+class RouteResponse(BaseModel):
+    stops: List[RouteStopResponse]
+    total_stops: int

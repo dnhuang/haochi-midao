@@ -8,10 +8,21 @@ interface AnalyzePageProps {
   orders: OrderItem[];
   password: string;
   onAnalysis: (items: SortedItem[]) => void;
-  onLabelChange: (index: number, newLabel: string) => void;
+  groupColors: Record<string, string>;
+  showLabel?: boolean;
+  onToggleLabel?: () => void;
+  foodColumnLabels?: Record<string, string>;
 }
 
-export default function AnalyzePage({ orders, password, onAnalysis, onLabelChange }: AnalyzePageProps) {
+export default function AnalyzePage({
+  orders,
+  password,
+  onAnalysis,
+  groupColors,
+  showLabel,
+  onToggleLabel,
+  foodColumnLabels,
+}: AnalyzePageProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,6 +48,11 @@ export default function AnalyzePage({ orders, password, onAnalysis, onLabelChang
     }
   };
 
+  const handleSelectGroup = (name: string) => {
+    const groupIndices = orders.filter((o) => o.group === name).map((o) => o.index);
+    setSelected(new Set(groupIndices));
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left: order table */}
@@ -45,7 +61,12 @@ export default function AnalyzePage({ orders, password, onAnalysis, onLabelChang
           orders={orders}
           selected={selected}
           onSelectionChange={setSelected}
-          onLabelChange={onLabelChange}
+          groupColors={groupColors}
+          onSelectGroup={handleSelectGroup}
+          showLabel={showLabel}
+          onToggleLabel={onToggleLabel}
+          compact
+          foodColumnLabels={foodColumnLabels}
           toolbarAction={
             <div className="flex items-center gap-3">
               {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -64,7 +85,7 @@ export default function AnalyzePage({ orders, password, onAnalysis, onLabelChang
       {/* Right: results */}
       <div>
         {results ? (
-          <AnalysisResults data={results} />
+          <AnalysisResults data={results} foodColumnLabels={foodColumnLabels} />
         ) : (
           <div className="bg-rose-50 rounded-lg shadow-md p-8 text-center text-gray-400">
             Select orders and click Analyze to see results
