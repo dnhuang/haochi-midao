@@ -55,7 +55,7 @@ make install
 
 # Backend
 cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000   # dev server
-cd backend && .venv/bin/pytest                                       # tests (42 tests)
+cd backend && .venv/bin/pytest                                       # tests (43 tests)
 cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check .  # lint
 
 # Frontend (requires Node 18.12+, uses pnpm)
@@ -206,7 +206,7 @@ Generates Avery 5167 label sheets:
 | POST   | `/analyze`        | Accept selected order indices, return sorted items + totals    | 2     |
 | POST   | `/labels`         | Accept sorted items, return PDF bytes                          | 3     |
 | GET    | `/menu`           | Return menu.csv contents                                       | 1     |
-| POST   | `/route`          | Accept orders + start address, return optimized delivery stops | 4     |
+| POST   | `/route`          | Accept orders + start address + optional departure_time, return optimized delivery stops with traffic-aware durations | 4     |
 
 ## Frontend Views
 
@@ -217,7 +217,7 @@ Generates Avery 5167 label sheets:
 | Preview/Edit | Review parsed orders in expandable table with inline-editable fields (customer, address, city, zip, label, group), add manual orders via modal, discrepancy warnings, validation for empty required fields, Continue button | 1.5 |
 | Analyze      | Order table with click-and-drag multi-select, Select All / Clear All / Analyze in toolbar row, analysis results (item list with non-selectable index column, summary metrics, bar chart, detailed report), CSV/report downloads | 2 |
 | Labels       | Preview table with bordered gridlines matching analysis table, PDF download button | 3 |
-| Routing      | Order table with route optimization, start address input, optimized stop list | 4     |
+| Routing      | Order table with route optimization, start address/time input, traffic-aware optimized stop list | 4     |
 
 ### Preview/Edit Page Flow
 
