@@ -24,6 +24,7 @@ def test_route_success(client, auth_headers):
                         },
                     ],
                     "start_address": "start addr",
+                    "departure_time": 1700000000,
                 },
             )
     assert resp.status_code == 200

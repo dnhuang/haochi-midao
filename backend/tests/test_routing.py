@@ -168,6 +168,64 @@ class TestGetDistanceMatrix:
         assert dur_matrix[0][0] == 0
 
     @patch("app.routing.requests.get")
+    def test_departure_time_passed_and_traffic_duration_used(self, mock_get):
+        """When departure_time is set, it's included in params and duration_in_traffic is preferred."""
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "status": "OK",
+            "rows": [
+                {
+                    "elements": [
+                        {
+                            "status": "OK",
+                            "distance": {"value": 0},
+                            "duration": {"value": 0},
+                            "duration_in_traffic": {"value": 0},
+                        },
+                        {
+                            "status": "OK",
+                            "distance": {"value": 1000},
+                            "duration": {"value": 600},
+                            "duration_in_traffic": {"value": 720},
+                        },
+                    ]
+                },
+                {
+                    "elements": [
+                        {
+                            "status": "OK",
+                            "distance": {"value": 1000},
+                            "duration": {"value": 600},
+                            "duration_in_traffic": {"value": 720},
+                        },
+                        {
+                            "status": "OK",
+                            "distance": {"value": 0},
+                            "duration": {"value": 0},
+                            "duration_in_traffic": {"value": 0},
+                        },
+                    ]
+                },
+            ],
+        }
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        locations = [
+            Location("a", "c", "z", 40.0, -74.0, "Alice", 0),
+            Location("b", "c", "z", 41.0, -73.0, "Bob", 1),
+        ]
+        dist_matrix, dur_matrix = get_distance_matrix(locations, "fake-key", departure_time=1700000000)
+
+        # Verify departure_time was included in API params
+        call_kwargs = mock_get.call_args
+        assert call_kwargs[1]["params"]["departure_time"] == 1700000000
+
+        # duration_in_traffic should be used instead of duration
+        assert dur_matrix[0][1] == 720
+        assert dur_matrix[1][0] == 720
+
+    @patch("app.routing.requests.get")
     def test_api_error(self, mock_get):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"status": "REQUEST_DENIED"}

@@ -47,6 +47,7 @@ export async function routeOrders(
   password: string,
   orders: { index: number; customer: string; address: string; city: string; zip_code: string }[],
   startAddress: string,
+  departureTime?: number,
 ): Promise<RouteResponse> {
   const res = await apiFetch("/route", {
     method: "POST",
@@ -54,6 +55,7 @@ export async function routeOrders(
     body: JSON.stringify({
       orders,
       start_address: startAddress,
+      ...(departureTime !== undefined && { departure_time: departureTime }),
     }),
   });
   return res.json();

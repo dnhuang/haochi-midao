@@ -97,11 +97,15 @@ def geocode_address(
 def get_distance_matrix(
     locations: List[Location],
     api_key: str,
+    departure_time: int | None = None,
 ) -> Tuple[List[List[int]], List[List[int]]]:
     """Get N×N driving distance (meters) and duration (seconds) matrices.
 
     Batches requests so each has at most 10×10 = 100 elements,
     respecting the API's 100-element-per-request limit.
+
+    When departure_time is set (Unix timestamp), uses duration_in_traffic
+    for traffic-aware estimates.
 
     Returns (distance_matrix, duration_matrix).
     """
@@ -126,6 +130,8 @@ def get_distance_matrix(
                 "mode": "driving",
                 "key": api_key,
             }
+            if departure_time is not None:
+                params["departure_time"] = departure_time
 
             try:
                 resp = requests.get(url, params=params, timeout=30)
@@ -141,7 +147,8 @@ def get_distance_matrix(
                 for j_offset, element in enumerate(row["elements"]):
                     if element["status"] == "OK":
                         dist_matrix[i_start + i_offset][j_start + j_offset] = element["distance"]["value"]
-                        dur_matrix[i_start + i_offset][j_start + j_offset] = element["duration"]["value"]
+                        dur_value = element.get("duration_in_traffic", element["duration"])["value"]
+                        dur_matrix[i_start + i_offset][j_start + j_offset] = dur_value
                     else:
                         dist_matrix[i_start + i_offset][j_start + j_offset] = 999_999_999
                         dur_matrix[i_start + i_offset][j_start + j_offset] = 999_999_999
@@ -214,6 +221,7 @@ def optimize_route(
     orders: List[dict],
     start_address: str,
     api_key: str,
+    departure_time: int | None = None,
 ) -> List[RouteStop]:
     """Geocode all addresses, compute distance matrix, solve TSP, return ordered stops.
 
@@ -252,7 +260,7 @@ def optimize_route(
     if errors:
         raise GeocodingError("multiple addresses", "Failed to geocode: " + "; ".join(errors))
 
-    dist_matrix, dur_matrix = get_distance_matrix(locations, api_key)
+    dist_matrix, dur_matrix = get_distance_matrix(locations, api_key, departure_time)
     route_indices = solve_tsp(dist_matrix, 0)
 
     stops = []

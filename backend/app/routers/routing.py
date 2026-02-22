@@ -33,7 +33,7 @@ def create_route(
     ]
 
     try:
-        stops = optimize_route(orders_dicts, request.start_address, api_key)
+        stops = optimize_route(orders_dicts, request.start_address, api_key, request.departure_time)
     except GeocodingError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RoutingError as e:

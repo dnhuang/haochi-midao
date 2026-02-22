@@ -70,6 +70,7 @@ class RouteOrderInput(BaseModel):
 class RouteRequest(BaseModel):
     orders: List[RouteOrderInput]
     start_address: str
+    departure_time: int | None = None
 
 
 class RouteStopResponse(BaseModel):

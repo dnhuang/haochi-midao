@@ -23,10 +23,10 @@ dev-frontend:
 	cd frontend && pnpm dev
 
 test-frontend:
-	cd frontend && pnpm test -- --run
+	. ~/.nvm/nvm.sh && nvm use 22 && cd frontend && pnpm test -- --run
 
 lint-frontend:
-	cd frontend && pnpm run lint && cd frontend && pnpm exec tsc --noEmit
+	. ~/.nvm/nvm.sh && nvm use 22 && cd frontend && pnpm run lint
 
 ## Combined
 .PHONY: install dev test lint

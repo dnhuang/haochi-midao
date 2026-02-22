@@ -55,6 +55,14 @@ export default function RoutingPage({ orders, password, groupColors, showLabel, 
         zip_code: o.zip_code,
       }));
 
+    const [depH, depM] = startTime.split(":").map(Number);
+    const now = new Date();
+    const departure = new Date(now.getFullYear(), now.getMonth(), now.getDate(), depH, depM);
+    if (departure.getTime() < Date.now()) {
+      departure.setDate(departure.getDate() + 1);
+    }
+    const departureTime = Math.floor(departure.getTime() / 1000);
+
     setLoading(true);
     setError(null);
     try {
@@ -62,6 +70,7 @@ export default function RoutingPage({ orders, password, groupColors, showLabel, 
         password,
         selectedOrders,
         startAddress.trim(),
+        departureTime,
       );
       setRouteResult(data);
     } catch (e) {
