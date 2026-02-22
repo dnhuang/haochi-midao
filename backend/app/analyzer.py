@@ -251,6 +251,7 @@ BAY_AREA_ZIP_TO_CITY: Dict[str, str] = {
     "94014": "Daly City",
     "94015": "Daly City",
     "94005": "Brisbane",
+    "94132": "San Francisco",
     "94080": "South San Francisco",
     "94066": "San Bruno",
     "94030": "Millbrae",

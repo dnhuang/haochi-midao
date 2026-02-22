@@ -7,6 +7,7 @@ import AnalyzePage from "./pages/AnalyzePage";
 import LabelsPage from "./pages/LabelsPage";
 import RoutingPage from "./pages/RoutingPage";
 import PreviewEditPage from "./pages/PreviewEditPage";
+import { GROUP_ORDER, GROUP_COLORS_MAP, assignGroup } from "./groupConfig";
 
 type Tab = "analyze" | "labels" | "routing";
 
@@ -22,17 +23,6 @@ const GROUP_COLORS = [
   "#818cf8", // indigo-400
   "#a3a3a3", // neutral-400
 ];
-
-/** Convert 0-based index to spreadsheet-style letter: 0→A, 25→Z, 26→AA, 27→AB, ... */
-function indexToLetter(i: number): string {
-  let result = "";
-  let n = i;
-  do {
-    result = String.fromCharCode(65 + (n % 26)) + result;
-    n = Math.floor(n / 26) - 1;
-  } while (n >= 0);
-  return result;
-}
 
 function App() {
   const { password, isAuthenticated, login, logout, error, loading } = useAuth();
@@ -62,25 +52,43 @@ function App() {
       setOrders(data.orders.map((o) => ({ ...o, group: "A" })));
       setShowLabel(true);
     } else {
-      // Raw files: group by city, sort by city then zip
-      const uniqueCities = [...new Set(data.orders.map((o) => o.city).filter(Boolean))];
-      const colors: Record<string, string> = {};
-      const cityToGroup: Record<string, string> = {};
-      uniqueCities.forEach((city, i) => {
-        const letter = indexToLetter(i);
-        colors[letter] = GROUP_COLORS[i % GROUP_COLORS.length];
-        cityToGroup[city] = letter;
-      });
+      // Raw files: assign predefined delivery groups by city/zip
+      const mapped = data.orders.map((o) => ({
+        ...o,
+        group: assignGroup(o.city, o.zip_code),
+      }));
 
-      // Sort orders by city (group letter) then zip code
-      const sorted = [...data.orders]
-        .map((o) => ({ ...o, group: o.city ? cityToGroup[o.city] : undefined }))
-        .sort((a, b) => {
-          const ga = a.group || "zzz";
-          const gb = b.group || "zzz";
-          if (ga !== gb) return ga.localeCompare(gb);
-          return (a.zip_code || "").localeCompare(b.zip_code || "");
-        });
+      // Build groupColors from groups that appear in the data
+      const activeGroups = [...new Set(mapped.map((o) => o.group).filter(Boolean))] as string[];
+      const colors: Record<string, string> = {};
+      // Add predefined groups in display order
+      for (const g of GROUP_ORDER) {
+        if (activeGroups.includes(g)) {
+          colors[g] = GROUP_COLORS_MAP[g];
+        }
+      }
+      // Add any user-added groups (shouldn't happen at upload, but be safe)
+      const usedPredefined = new Set(Object.keys(colors));
+      for (const g of activeGroups) {
+        if (!usedPredefined.has(g)) {
+          colors[g] = GROUP_COLORS[Object.keys(colors).length % GROUP_COLORS.length];
+        }
+      }
+
+      // Sort by predefined group order, then by zip within each group
+      const sorted = [...mapped].sort((a, b) => {
+        const ga = a.group;
+        const gb = b.group;
+        if (!ga && !gb) return 0;
+        if (!ga) return 1;
+        if (!gb) return -1;
+        const ia = GROUP_ORDER.indexOf(ga);
+        const ib = GROUP_ORDER.indexOf(gb);
+        const ra = ia >= 0 ? ia : GROUP_ORDER.length;
+        const rb = ib >= 0 ? ib : GROUP_ORDER.length;
+        if (ra !== rb) return ra - rb;
+        return (a.zip_code || "").localeCompare(b.zip_code || "");
+      });
 
       setGroupColors(colors);
       setOrders(sorted);

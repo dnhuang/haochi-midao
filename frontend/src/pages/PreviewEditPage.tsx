@@ -4,6 +4,7 @@ import { fetchMenu } from "../api";
 import DiscrepancyWarning from "../components/DiscrepancyWarning";
 import AddOrderForm from "../components/AddOrderForm";
 import GroupBar from "../components/GroupBar";
+import { sortByGroupOrder } from "../groupConfig";
 
 interface PreviewEditPageProps {
   uploadData: UploadResponse;
@@ -21,19 +22,6 @@ interface PreviewEditPageProps {
   showLabel: boolean;
   onToggleLabel: () => void;
   foodColumnLabels?: Record<string, string>;
-}
-
-/** Sort orders by group: ungrouped first, then alphabetical by group name */
-function sortByGroup(orders: OrderItem[], hasGroups: boolean): OrderItem[] {
-  if (!hasGroups) return orders;
-  const ungrouped = orders.filter((o) => !o.group);
-  const grouped = orders.filter((o) => !!o.group);
-  const groupNames = [...new Set(grouped.map((o) => o.group!))].sort();
-  const sorted: OrderItem[] = [...ungrouped];
-  for (const name of groupNames) {
-    sorted.push(...grouped.filter((o) => o.group === name));
-  }
-  return sorted;
 }
 
 /** Identify group boundaries for rendering dividers */
@@ -77,7 +65,7 @@ export default function PreviewEditPage({
   const [dropTarget, setDropTarget] = useState<number | null>(null);
 
   const hasGroups = Object.keys(groupColors).length > 0;
-  const sortedOrders = sortByGroup(orders, hasGroups);
+  const sortedOrders = sortByGroupOrder(orders, hasGroups);
   const groupBoundaries = hasGroups ? getGroupBoundaries(sortedOrders) : new Map<number, string>();
   const groupNames = Object.keys(groupColors);
 

@@ -2,6 +2,7 @@ import { Fragment, useRef, useState } from "react";
 import type { OrderItem } from "../types";
 import { useDragSelect } from "../hooks/useDragSelect";
 import GroupBar from "./GroupBar";
+import { sortByGroupOrder } from "../groupConfig";
 
 interface OrderTableProps {
   orders: OrderItem[];
@@ -26,18 +27,6 @@ interface OrderTableProps {
   compact?: boolean;
   /** Map from full item_zh names to short display names */
   foodColumnLabels?: Record<string, string>;
-}
-
-/** Sort orders by group: ungrouped first, then alphabetical by group name */
-function sortByGroup(orders: OrderItem[]): OrderItem[] {
-  const ungrouped = orders.filter((o) => !o.group);
-  const grouped = orders.filter((o) => !!o.group);
-  const groupNames = [...new Set(grouped.map((o) => o.group!))].sort();
-  const sorted: OrderItem[] = [...ungrouped];
-  for (const name of groupNames) {
-    sorted.push(...grouped.filter((o) => o.group === name));
-  }
-  return sorted;
 }
 
 /** Identify group boundaries for rendering dividers */
@@ -72,7 +61,7 @@ export default function OrderTable({
   foodColumnLabels,
 }: OrderTableProps) {
   const hasGroups = groupColors && Object.keys(groupColors).length > 0;
-  const sortedOrders = hasGroups ? sortByGroup(orders) : orders;
+  const sortedOrders = hasGroups ? sortByGroupOrder(orders, true) : orders;
   const groupBoundaries = hasGroups ? getGroupBoundaries(sortedOrders) : new Map<number, string>();
 
   const orderIndices = sortedOrders.map((o) => o.index);
