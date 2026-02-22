@@ -43,6 +43,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>("analyze");
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
   const [showLabel, setShowLabel] = useState(true);
+  const [foodColumnLabels, setFoodColumnLabels] = useState<Record<string, string>>({});
 
   if (!isAuthenticated || !password) {
     return <LoginForm onLogin={login} error={error} loading={loading} />;
@@ -53,6 +54,7 @@ function App() {
     setIsConfirmed(false);
     setSortedItems(null);
     setActiveTab("analyze");
+    setFoodColumnLabels(data.food_column_labels || {});
     if (data.format === "formatted") {
       // Formatted files: single group "A" for all orders
       const colors: Record<string, string> = { A: GROUP_COLORS[0] };
@@ -94,6 +96,7 @@ function App() {
     setActiveTab("analyze");
     setGroupColors({});
     setShowLabel(true);
+    setFoodColumnLabels({});
   };
 
   const handleBackToPreview = () => {
@@ -213,6 +216,7 @@ function App() {
             onReorder={handleReorderOrders}
             showLabel={showLabel}
             onToggleLabel={() => setShowLabel((v) => !v)}
+            foodColumnLabels={foodColumnLabels}
           />
         ) : activeTab === "analyze" ? (
           <AnalyzePage
@@ -222,6 +226,7 @@ function App() {
             groupColors={groupColors}
             showLabel={showLabel}
             onToggleLabel={() => setShowLabel((v) => !v)}
+            foodColumnLabels={foodColumnLabels}
           />
         ) : activeTab === "labels" ? (
           <LabelsPage sortedItems={sortedItems} password={password} />
@@ -232,6 +237,7 @@ function App() {
             groupColors={groupColors}
             showLabel={showLabel}
             onToggleLabel={() => setShowLabel((v) => !v)}
+            foodColumnLabels={foodColumnLabels}
           />
         )}
       </main>

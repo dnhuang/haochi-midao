@@ -26,9 +26,10 @@ interface RoutingPageProps {
   groupColors: Record<string, string>;
   showLabel?: boolean;
   onToggleLabel?: () => void;
+  foodColumnLabels?: Record<string, string>;
 }
 
-export default function RoutingPage({ orders, password, groupColors, showLabel, onToggleLabel }: RoutingPageProps) {
+export default function RoutingPage({ orders, password, groupColors, showLabel, onToggleLabel, foodColumnLabels }: RoutingPageProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [startAddress, setStartAddress] = useState(DEFAULT_START_ADDRESS);
   const [routeResult, setRouteResult] = useState<RouteResponse | null>(null);
@@ -129,6 +130,8 @@ export default function RoutingPage({ orders, password, groupColors, showLabel, 
           onSelectGroup={handleSelectGroup}
           showLabel={showLabel}
           onToggleLabel={onToggleLabel}
+          compact
+          foodColumnLabels={foodColumnLabels}
           toolbarAction={
             <div className="flex items-center gap-3">
               {error && <p className="text-red-600 text-sm">{error}</p>}

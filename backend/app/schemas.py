@@ -26,6 +26,7 @@ class UploadResponse(BaseModel):
     discrepancies: List[Discrepancy]
     food_columns: List[str]
     format: str
+    food_column_labels: Dict[str, str]
 
 
 class MenuItem(BaseModel):

@@ -23,6 +23,7 @@ export interface UploadResponse {
   discrepancies: Discrepancy[];
   food_columns: string[];
   format: "raw" | "formatted";
+  food_column_labels: Record<string, string>;
 }
 
 export interface MenuItem {

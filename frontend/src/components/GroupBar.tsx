@@ -45,8 +45,8 @@ export default function GroupBar({
 
   // ── Rename group ───────────────────────────────────────────
   const handleRenameStart = (name: string, e: React.MouseEvent) => {
-    e.stopPropagation();
     if (readOnly || !onRenameGroup) return;
+    e.stopPropagation();
     setRenamingGroup(name);
     setRenameValue(name);
     setRenameError(null);

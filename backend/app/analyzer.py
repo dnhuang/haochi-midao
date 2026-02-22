@@ -13,6 +13,14 @@ def load_food_items(path: str | None = None) -> List[str]:
     return food_df["item_zh"].tolist()
 
 
+def load_food_label_map(path: str | None = None) -> Dict[str, str]:
+    """Load mapping from full item_zh names to short item_short_zh names."""
+    if path is None:
+        path = str(Path(__file__).resolve().parent.parent / "data" / "menu.csv")
+    food_df = pd.read_csv(path)
+    return dict(zip(food_df["item_zh"], food_df["item_short_zh"]))
+
+
 def detect_format(excel_file) -> str:
     """Detect whether the Excel file is raw WeChat export or human-formatted.
     Returns 'raw' or 'formatted'.

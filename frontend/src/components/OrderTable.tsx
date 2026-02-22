@@ -22,6 +22,10 @@ interface OrderTableProps {
   showLabel?: boolean;
   /** Callback to toggle label visibility */
   onToggleLabel?: () => void;
+  /** Hide Address and Zip columns for compact layout */
+  compact?: boolean;
+  /** Map from full item_zh names to short display names */
+  foodColumnLabels?: Record<string, string>;
 }
 
 /** Sort orders by group: ungrouped first, then alphabetical by group name */
@@ -64,6 +68,8 @@ export default function OrderTable({
   onReorder,
   showLabel,
   onToggleLabel,
+  compact,
+  foodColumnLabels,
 }: OrderTableProps) {
   const hasGroups = groupColors && Object.keys(groupColors).length > 0;
   const sortedOrders = hasGroups ? sortByGroup(orders) : orders;
@@ -132,7 +138,8 @@ export default function OrderTable({
 
   const groupNames = groupColors ? Object.keys(groupColors) : [];
   const labelVisible = showLabel !== false;
-  const colCount = 7 + (onReorder ? 1 : 0) + (groupColors ? 1 : 0) + (labelVisible ? 1 : 0);
+  const baseColCount = compact ? 5 : 7;
+  const colCount = baseColCount + (onReorder ? 1 : 0) + (groupColors ? 1 : 0) + (labelVisible ? 1 : 0);
 
   return (
     <div>
@@ -160,7 +167,7 @@ export default function OrderTable({
         </span>
         {toolbarAction && <div className="ml-auto">{toolbarAction}</div>}
       </div>
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-rose-50 text-left text-gray-600">
             <tr>
@@ -202,9 +209,9 @@ export default function OrderTable({
               )}
               {groupColors && <th className="px-4 py-2">Group</th>}
               <th className="px-4 py-2">Customer</th>
-              <th className="px-4 py-2">Address</th>
+              {!compact && <th className="px-4 py-2">Address</th>}
               <th className="px-4 py-2">City</th>
-              <th className="px-4 py-2">Zip</th>
+              {!compact && <th className="px-4 py-2">Zip</th>}
               <th className="px-4 py-2">Items</th>
             </tr>
           </thead>
@@ -319,9 +326,9 @@ export default function OrderTable({
                       </td>
                     )}
                     <td className="px-4 py-2">{order.customer}</td>
-                    <td className="px-4 py-2 text-gray-600 max-w-xs truncate" title={order.address}>{order.address}</td>
+                    {!compact && <td className="px-4 py-2 text-gray-600 max-w-xs truncate" title={order.address}>{order.address}</td>}
                     <td className="px-4 py-2 text-gray-600">{order.city}</td>
-                    <td className="px-4 py-2 text-gray-500">{order.zip_code}</td>
+                    {!compact && <td className="px-4 py-2 text-gray-500">{order.zip_code}</td>}
                     <td className="px-4 py-2 text-gray-500">
                       {itemEntries.length} item{itemEntries.length !== 1 ? "s" : ""}
                     </td>
@@ -332,7 +339,7 @@ export default function OrderTable({
                         <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 text-sm text-gray-600 max-w-md">
                           {itemEntries.map(([name, qty]) => (
                             <div key={name} className="flex justify-between">
-                              <span>{name}</span>
+                              <span>{foodColumnLabels?.[name] || name}</span>
                               <span className="text-gray-800 font-medium ml-2">x{qty}</span>
                             </div>
                           ))}

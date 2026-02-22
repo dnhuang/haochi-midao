@@ -20,6 +20,7 @@ interface PreviewEditPageProps {
   onReorder: (reorderedOrders: OrderItem[]) => void;
   showLabel: boolean;
   onToggleLabel: () => void;
+  foodColumnLabels?: Record<string, string>;
 }
 
 /** Sort orders by group: ungrouped first, then alphabetical by group name */
@@ -64,6 +65,7 @@ export default function PreviewEditPage({
   onReorder,
   showLabel,
   onToggleLabel,
+  foodColumnLabels,
 }: PreviewEditPageProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderItem | null>(null);
@@ -420,7 +422,7 @@ export default function PreviewEditPage({
                         <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 text-sm text-gray-600 max-w-md">
                           {itemEntries.map(([name, qty]) => (
                             <div key={name} className="flex justify-between">
-                              <span>{name}</span>
+                              <span>{foodColumnLabels?.[name] || name}</span>
                               <span className="text-gray-800 font-medium ml-2">x{qty}</span>
                             </div>
                           ))}

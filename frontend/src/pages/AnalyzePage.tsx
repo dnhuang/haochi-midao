@@ -11,6 +11,7 @@ interface AnalyzePageProps {
   groupColors: Record<string, string>;
   showLabel?: boolean;
   onToggleLabel?: () => void;
+  foodColumnLabels?: Record<string, string>;
 }
 
 export default function AnalyzePage({
@@ -20,6 +21,7 @@ export default function AnalyzePage({
   groupColors,
   showLabel,
   onToggleLabel,
+  foodColumnLabels,
 }: AnalyzePageProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
@@ -63,6 +65,8 @@ export default function AnalyzePage({
           onSelectGroup={handleSelectGroup}
           showLabel={showLabel}
           onToggleLabel={onToggleLabel}
+          compact
+          foodColumnLabels={foodColumnLabels}
           toolbarAction={
             <div className="flex items-center gap-3">
               {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -81,7 +85,7 @@ export default function AnalyzePage({
       {/* Right: results */}
       <div>
         {results ? (
-          <AnalysisResults data={results} />
+          <AnalysisResults data={results} foodColumnLabels={foodColumnLabels} />
         ) : (
           <div className="bg-rose-50 rounded-lg shadow-md p-8 text-center text-gray-400">
             Select orders and click Analyze to see results
