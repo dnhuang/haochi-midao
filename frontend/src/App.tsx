@@ -206,6 +206,7 @@ function App() {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto p-6">
+        <div key={!uploadData ? "upload" : !isConfirmed ? "preview" : "confirmed"} className="animate-fade-in">
         {!uploadData ? (
           <FileUpload password={password} onUpload={handleUpload} />
         ) : !isConfirmed ? (
@@ -252,6 +253,7 @@ function App() {
             )}
           </div>
         )}
+        </div>
       </main>
     </div>
   );
