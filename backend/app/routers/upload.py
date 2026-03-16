@@ -9,6 +9,8 @@ from app.schemas import Discrepancy, OrderItem, UploadResponse
 
 router = APIRouter()
 
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
+
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload(file: UploadFile, _password: str = Depends(verify_password)):
@@ -16,6 +18,8 @@ async def upload(file: UploadFile, _password: str = Depends(verify_password)):
         raise HTTPException(status_code=400, detail="Please upload an .xlsx file")
 
     contents = await file.read()
+    if len(contents) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="File too large (5MB max)")
     excel_file = io.BytesIO(contents)
 
     try:
