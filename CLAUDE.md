@@ -21,9 +21,9 @@ haochi-midao/
 │   │   ├── App.tsx        # Auth gate + tab navigation
 │   │   ├── api.ts         # Fetch wrappers for all endpoints
 │   │   ├── types.ts       # TypeScript interfaces
-│   │   ├── index.css      # Tailwind imports + fade-in animation
+│   │   ├── index.css      # Tailwind imports + animations (fade-in, tab transitions, expand/collapse, success flash)
 │   │   ├── groupConfig.ts # Predefined delivery group mappings, colors, assign + sort
-│   │   ├── components/    # LoginForm, FileUpload, OrderTable, AnalysisResults, LabelPreview, DiscrepancyWarning, AddOrderForm, GroupBar
+│   │   ├── components/    # LoginForm, FileUpload, OrderTable, AnalysisResults, LabelPreview, DiscrepancyWarning, AddOrderForm, GroupBar, Spinner
 │   │   ├── hooks/         # useAuth, useDragSelect
 │   │   └── pages/         # AnalyzePage, LabelsPage, PreviewEditPage, RoutingPage
 │   ├── tests/             # Vitest unit tests
@@ -61,11 +61,12 @@ cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check .  # lint
 
 # Frontend (requires Node 18.12+, uses pnpm)
 cd frontend && pnpm dev                  # dev server (port 5173, proxies /api → :8000)
-cd frontend && pnpm test -- --run        # unit tests (19 tests)
+cd frontend && pnpm test -- --run        # unit tests (28 tests)
 cd frontend && pnpm run lint             # type-check (tsc --noEmit)
 cd frontend && pnpm exec playwright test # e2e (needs both servers running)
 
 # Combined (from root)
+make dev        # start backend + frontend concurrently (Ctrl+C kills both)
 make test      # backend + frontend tests
 make lint       # backend + frontend lint
 ```
@@ -81,7 +82,14 @@ Rose/pink theme using Tailwind CSS utility classes:
 - **Selected order rows**: `bg-rose-200` for strong contrast
 - **Table headers**: `bg-rose-50`
 - **Bar chart**: `bg-rose-400`
-- **Fade-in animation**: defined in `index.css`, used by modal overlay (`animate-fade-in`)
+- **Animations** (defined in `index.css`):
+  - `animate-fade-in` (0.2s): modal overlays, page-level view transitions (keyed by current phase)
+  - `animate-tab-enter` (0.2s fade + subtle upward slide): tab content switches (Analyze/Labels/Routing), AnalysisResults sub-tabs
+  - `expand-wrapper` (0.2s CSS grid transition): smooth expand/collapse for order detail rows
+  - `animate-success-flash` (2.5s fade-in-stay-fade-out): brief success messages after upload and analysis
+  - `animate-shake` (0.35s): GroupBar rename conflict error
+- **Loading spinners**: `Spinner` component (animated SVG) shown inline in all action buttons during API calls
+- **Scroll-to-top**: smooth scroll on tab switch to prevent disorienting scroll position carryover
 
 Branding uses Bubu & Dudu cartoon assets in `frontend/public/`:
 - `dudu.jpg` — login page avatar
@@ -203,7 +211,7 @@ Generates Avery 5167 label sheets:
 
 | Method | Path              | Description                                                    | Phase |
 |--------|-------------------|----------------------------------------------------------------|-------|
-| POST   | `/upload`         | Accept xlsx, parse orders, return orders + discrepancies + format | 1   |
+| POST   | `/upload`         | Accept xlsx (5MB max), parse orders, return orders + discrepancies + format | 1   |
 | POST   | `/analyze`        | Accept selected order indices, return sorted items + totals    | 2     |
 | POST   | `/labels`         | Accept sorted items, return PDF bytes                          | 3     |
 | GET    | `/menu`           | Return menu.csv contents                                       | 1     |
