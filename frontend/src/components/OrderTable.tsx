@@ -322,20 +322,24 @@ export default function OrderTable({
                       {itemEntries.length} item{itemEntries.length !== 1 ? "s" : ""}
                     </td>
                   </tr>
-                  {isExpanded && (
-                    <tr key={`${order.index}-details`}>
-                      <td colSpan={colCount} className="bg-gray-50 px-8 py-2">
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 text-sm text-gray-600 max-w-md">
-                          {itemEntries.map(([name, qty]) => (
-                            <div key={name} className="flex justify-between">
-                              <span>{foodColumnLabels?.[name] || name}</span>
-                              <span className="text-gray-800 font-medium ml-2">x{qty}</span>
+                  <tr key={`${order.index}-details`}>
+                    <td colSpan={colCount} className="p-0">
+                      <div className={`expand-wrapper ${isExpanded ? "expanded" : ""}`}>
+                        <div>
+                          <div className="bg-gray-50 px-8 py-2">
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 text-sm text-gray-600 max-w-md">
+                              {itemEntries.map(([name, qty]) => (
+                                <div key={name} className="flex justify-between">
+                                  <span>{foodColumnLabels?.[name] || name}</span>
+                                  <span className="text-gray-800 font-medium ml-2">x{qty}</span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          </div>
                         </div>
-                      </td>
-                    </tr>
-                  )}
+                      </div>
+                    </td>
+                  </tr>
                 </Fragment>
               );
             })}

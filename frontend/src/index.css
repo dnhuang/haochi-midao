@@ -39,3 +39,18 @@
 .animate-tab-enter {
   animation: tab-fade-in 0.2s ease-out;
 }
+
+/* Smooth expand/collapse for table detail rows */
+.expand-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease-out;
+}
+
+.expand-wrapper.expanded {
+  grid-template-rows: 1fr;
+}
+
+.expand-wrapper > div {
+  overflow: hidden;
+}
