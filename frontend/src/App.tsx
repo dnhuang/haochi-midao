@@ -226,27 +226,31 @@ function App() {
             onToggleLabel={() => setShowLabel((v) => !v)}
             foodColumnLabels={foodColumnLabels}
           />
-        ) : activeTab === "analyze" ? (
-          <AnalyzePage
-            orders={orders}
-            password={password}
-            onAnalysis={setSortedItems}
-            groupColors={groupColors}
-            showLabel={showLabel}
-            onToggleLabel={() => setShowLabel((v) => !v)}
-            foodColumnLabels={foodColumnLabels}
-          />
-        ) : activeTab === "labels" ? (
-          <LabelsPage sortedItems={sortedItems} password={password} />
         ) : (
-          <RoutingPage
-            orders={orders}
-            password={password}
-            groupColors={groupColors}
-            showLabel={showLabel}
-            onToggleLabel={() => setShowLabel((v) => !v)}
-            foodColumnLabels={foodColumnLabels}
-          />
+          <div key={activeTab} className="animate-tab-enter">
+            {activeTab === "analyze" ? (
+              <AnalyzePage
+                orders={orders}
+                password={password}
+                onAnalysis={setSortedItems}
+                groupColors={groupColors}
+                showLabel={showLabel}
+                onToggleLabel={() => setShowLabel((v) => !v)}
+                foodColumnLabels={foodColumnLabels}
+              />
+            ) : activeTab === "labels" ? (
+              <LabelsPage sortedItems={sortedItems} password={password} />
+            ) : (
+              <RoutingPage
+                orders={orders}
+                password={password}
+                groupColors={groupColors}
+                showLabel={showLabel}
+                onToggleLabel={() => setShowLabel((v) => !v)}
+                foodColumnLabels={foodColumnLabels}
+              />
+            )}
+          </div>
         )}
       </main>
     </div>
