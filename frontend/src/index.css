@@ -54,3 +54,15 @@
 .expand-wrapper > div {
   overflow: hidden;
 }
+
+/* Brief success message that fades in, stays, then fades out */
+@keyframes success-flash {
+  0% { opacity: 0; transform: translateY(-4px); }
+  10% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-success-flash {
+  animation: success-flash 2.5s ease-out forwards;
+}
