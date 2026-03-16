@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Spinner from "./Spinner";
 
 interface LoginFormProps {
   onLogin: (password: string) => Promise<void>;
@@ -35,7 +36,7 @@ export default function LoginForm({ onLogin, error, loading }: LoginFormProps) {
           disabled={loading || !pw.trim()}
           className="w-full py-2 bg-rose-600 text-white rounded-md border border-rose-700 hover:bg-rose-700 disabled:opacity-50"
         >
-          {loading ? "Verifying..." : "Login"}
+          {loading ? <><Spinner className="inline mr-1.5" />Verifying...</> : "Login"}
         </button>
       </form>
     </div>

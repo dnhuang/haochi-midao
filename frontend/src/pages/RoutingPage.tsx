@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { OrderItem, RouteResponse } from "../types";
 import { routeOrders } from "../api";
 import OrderTable from "../components/OrderTable";
+import Spinner from "../components/Spinner";
 
 const DEFAULT_START_ADDRESS = "2812 Pelican Drive, Union City, CA 94587";
 
@@ -149,7 +150,7 @@ export default function RoutingPage({ orders, password, groupColors, showLabel, 
                 disabled={!canRoute || loading}
                 className="px-5 py-0.5 bg-rose-600 text-white text-sm rounded border border-rose-700 hover:bg-rose-700 disabled:opacity-50"
               >
-                {loading ? "Routing..." : "Route"}
+                {loading ? <><Spinner className="inline mr-1.5" />Routing...</> : "Route"}
               </button>
             </div>
           }

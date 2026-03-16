@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { SortedItem } from "../types";
 import { downloadLabels } from "../api";
 import LabelPreview from "../components/LabelPreview";
+import Spinner from "../components/Spinner";
 
 interface LabelsPageProps {
   sortedItems: SortedItem[] | null;
@@ -43,7 +44,7 @@ export default function LabelsPage({ sortedItems, password }: LabelsPageProps) {
           disabled={downloading}
           className="px-4 py-2 bg-rose-600 text-white rounded-md border border-rose-700 hover:bg-rose-700 disabled:opacity-50"
         >
-          {downloading ? "Generating..." : "Download Labels PDF"}
+          {downloading ? <><Spinner className="inline mr-1.5" />Generating...</> : "Download Labels PDF"}
         </button>
       </div>
       <LabelPreview sortedItems={sortedItems} password={password} />

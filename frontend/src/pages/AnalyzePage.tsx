@@ -3,6 +3,7 @@ import type { OrderItem, SortedItem, AnalyzeResponse } from "../types";
 import { analyzeOrders } from "../api";
 import OrderTable from "../components/OrderTable";
 import AnalysisResults from "../components/AnalysisResults";
+import Spinner from "../components/Spinner";
 
 interface AnalyzePageProps {
   orders: OrderItem[];
@@ -75,7 +76,7 @@ export default function AnalyzePage({
                 disabled={selected.size === 0 || loading}
                 className="px-5 py-0.5 bg-rose-600 text-white text-sm rounded border border-rose-700 hover:bg-rose-700 disabled:opacity-50"
               >
-                {loading ? "Analyzing..." : "Analyze"}
+                {loading ? <><Spinner className="inline mr-1.5" />Analyzing...</> : "Analyze"}
               </button>
             </div>
           }
