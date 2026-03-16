@@ -190,7 +190,7 @@ function App() {
             {(["analyze", "labels", "routing"] as Tab[]).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className={`py-3 text-sm font-medium border-b-2 capitalize ${
                   activeTab === tab
                     ? "border-rose-600 text-rose-600"
