@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { UploadResponse } from "../types";
 import { uploadFile } from "../api";
+import Spinner from "./Spinner";
 
 interface FileUploadProps {
   password: string;
@@ -46,7 +47,7 @@ export default function FileUpload({ password, onUpload }: FileUploadProps) {
             disabled={loading || !hasFile}
             className="px-4 py-2 bg-rose-600 text-white rounded-md border border-rose-700 hover:bg-rose-700 disabled:opacity-50"
           >
-            {loading ? "Processing..." : "Process"}
+            {loading ? <><Spinner className="inline mr-1.5" />Processing...</> : "Process"}
           </button>
         </div>
         {error && <p className="mt-3 text-red-600 text-sm">{error}</p>}

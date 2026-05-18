@@ -190,7 +190,7 @@ function App() {
             {(["analyze", "labels", "routing"] as Tab[]).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className={`py-3 text-sm font-medium border-b-2 capitalize ${
                   activeTab === tab
                     ? "border-rose-600 text-rose-600"
@@ -206,6 +206,7 @@ function App() {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto p-6">
+        <div key={!uploadData ? "upload" : !isConfirmed ? "preview" : "confirmed"} className="animate-fade-in">
         {!uploadData ? (
           <FileUpload password={password} onUpload={handleUpload} />
         ) : !isConfirmed ? (
@@ -226,28 +227,33 @@ function App() {
             onToggleLabel={() => setShowLabel((v) => !v)}
             foodColumnLabels={foodColumnLabels}
           />
-        ) : activeTab === "analyze" ? (
-          <AnalyzePage
-            orders={orders}
-            password={password}
-            onAnalysis={setSortedItems}
-            groupColors={groupColors}
-            showLabel={showLabel}
-            onToggleLabel={() => setShowLabel((v) => !v)}
-            foodColumnLabels={foodColumnLabels}
-          />
-        ) : activeTab === "labels" ? (
-          <LabelsPage sortedItems={sortedItems} password={password} />
         ) : (
-          <RoutingPage
-            orders={orders}
-            password={password}
-            groupColors={groupColors}
-            showLabel={showLabel}
-            onToggleLabel={() => setShowLabel((v) => !v)}
-            foodColumnLabels={foodColumnLabels}
-          />
+          <div key={activeTab} className="animate-tab-enter">
+            {activeTab === "analyze" ? (
+              <AnalyzePage
+                orders={orders}
+                password={password}
+                onAnalysis={setSortedItems}
+                groupColors={groupColors}
+                showLabel={showLabel}
+                onToggleLabel={() => setShowLabel((v) => !v)}
+                foodColumnLabels={foodColumnLabels}
+              />
+            ) : activeTab === "labels" ? (
+              <LabelsPage sortedItems={sortedItems} password={password} />
+            ) : (
+              <RoutingPage
+                orders={orders}
+                password={password}
+                groupColors={groupColors}
+                showLabel={showLabel}
+                onToggleLabel={() => setShowLabel((v) => !v)}
+                foodColumnLabels={foodColumnLabels}
+              />
+            )}
+          </div>
         )}
+        </div>
       </main>
     </div>
   );

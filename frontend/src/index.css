@@ -24,3 +24,45 @@
 .animate-shake {
   animation: shake 0.35s ease-in-out;
 }
+
+@keyframes tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tab-enter {
+  animation: tab-fade-in 0.2s ease-out;
+}
+
+/* Smooth expand/collapse for table detail rows */
+.expand-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease-out;
+}
+
+.expand-wrapper.expanded {
+  grid-template-rows: 1fr;
+}
+
+.expand-wrapper > div {
+  overflow: hidden;
+}
+
+/* Brief success message that fades in, stays, then fades out */
+@keyframes success-flash {
+  0% { opacity: 0; transform: translateY(-4px); }
+  10% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-success-flash {
+  animation: success-flash 2.5s ease-out forwards;
+}

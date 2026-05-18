@@ -154,6 +154,9 @@ export default function PreviewEditPage({
 
   return (
     <div className="space-y-4">
+      <div className="animate-success-flash text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2 text-center pointer-events-none">
+        File processed — {orders.length} order{orders.length !== 1 ? "s" : ""} loaded
+      </div>
       <DiscrepancyWarning discrepancies={uploadData.discrepancies} />
 
       {/* Header */}

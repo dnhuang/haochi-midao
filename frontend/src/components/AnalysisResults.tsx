@@ -60,6 +60,7 @@ export default function AnalysisResults({ data, foodColumnLabels }: AnalysisResu
       </div>
 
       <div className="p-4">
+        <div key={tab} className="animate-tab-enter">
         {tab === "items" && (
           <div>
             <div className="flex justify-end mb-3">
@@ -139,6 +140,7 @@ export default function AnalysisResults({ data, foodColumnLabels }: AnalysisResu
             <pre className="bg-gray-50 p-4 rounded-lg text-sm whitespace-pre-wrap">{reportContent}</pre>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { OrderItem, SortedItem, AnalyzeResponse } from "../types";
 import { analyzeOrders } from "../api";
 import OrderTable from "../components/OrderTable";
 import AnalysisResults from "../components/AnalysisResults";
+import Spinner from "../components/Spinner";
 
 interface AnalyzePageProps {
   orders: OrderItem[];
@@ -27,6 +28,12 @@ export default function AnalyzePage({
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => { if (successTimerRef.current) clearTimeout(successTimerRef.current); };
+  }, []);
 
   const handleAnalyze = async () => {
     if (selected.size === 0) return;
@@ -41,6 +48,9 @@ export default function AnalyzePage({
       const data = await analyzeOrders(password, selectedOrders);
       setResults(data);
       onAnalysis(data.sorted_items);
+      setShowSuccess(true);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => setShowSuccess(false), 2500);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Analysis failed");
     } finally {
@@ -70,12 +80,15 @@ export default function AnalyzePage({
           toolbarAction={
             <div className="flex items-center gap-3">
               {error && <p className="text-red-600 text-sm">{error}</p>}
+              {showSuccess && (
+                <span className="animate-success-flash text-sm text-green-700">Done!</span>
+              )}
               <button
                 onClick={handleAnalyze}
                 disabled={selected.size === 0 || loading}
                 className="px-5 py-0.5 bg-rose-600 text-white text-sm rounded border border-rose-700 hover:bg-rose-700 disabled:opacity-50"
               >
-                {loading ? "Analyzing..." : "Analyze"}
+                {loading ? <><Spinner className="inline mr-1.5" />Analyzing...</> : "Analyze"}
               </button>
             </div>
           }
