@@ -14,7 +14,7 @@ from app.analyzer import (
 
 def test_load_food_items():
     items = load_food_items()
-    assert len(items) == 31
+    assert len(items) == 32
     assert all(isinstance(i, str) for i in items)
 
 

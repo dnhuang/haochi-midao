@@ -113,7 +113,7 @@ Reference list of available food items. Updated manually when new items are adde
 | `item_short_zh`| Shortened Chinese name                   | `烧卖`                                |
 | `item_en`      | Hanyu pinyin of short name               | `shao mai`                           |
 
-Currently 31 items. `item_zh` is used for parser matching. `item_short_zh` used for label display.
+Currently 32 items. `item_zh` is used for parser matching. `item_short_zh` used for label display.
 
 ### Raw WeChat Export Structure
 
